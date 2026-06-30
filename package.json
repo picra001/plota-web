@@ -1,0 +1,18 @@
+{
+  "name": "plota-web",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @plota/web dev",
+    "build": "pnpm --filter @plota/web build",
+    "start": "pnpm --filter @plota/web start",
+    "lint": "pnpm --filter @plota/web lint"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3"
+  }
+}

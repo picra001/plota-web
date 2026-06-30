@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-white text-slate-800 antialiased;
+}
+
+/* MDX 본문 기본 타이포그래피 (플러그인 없이 최소 스타일) */
+.prose h2 {
+  @apply mt-10 mb-4 text-2xl font-bold text-slate-900;
+}
+.prose h3 {
+  @apply mt-8 mb-3 text-xl font-semibold text-slate-900;
+}
+.prose p {
+  @apply my-4 leading-7 text-slate-700;
+}
+.prose ul {
+  @apply my-4 list-disc pl-6 text-slate-700;
+}
+.prose ol {
+  @apply my-4 list-decimal pl-6 text-slate-700;
+}
+.prose li {
+  @apply my-1;
+}
+.prose a {
+  @apply text-brand underline underline-offset-2 hover:opacity-80;
+}
+.prose pre {
+  @apply my-6 overflow-x-auto rounded-lg bg-slate-900 p-4 text-sm text-slate-100;
+}
+.prose code {
+  @apply rounded bg-slate-100 px-1.5 py-0.5 text-sm text-slate-800;
+}
+.prose pre code {
+  @apply bg-transparent p-0 text-slate-100;
+}
+.prose blockquote {
+  @apply my-6 border-l-4 border-brand/40 pl-4 italic text-slate-600;
+}
+.prose img {
+  @apply my-6 h-auto w-full rounded-lg border border-slate-200;
+}
+.prose figure {
+  @apply my-6;
+}
+.prose figure img {
+  @apply my-0;
+}
+.prose figcaption {
+  @apply mt-2 text-center text-sm text-slate-500;
+}
