@@ -2,7 +2,17 @@
 
 import { useState } from "react";
 
-export function ShareButtons({ url, title }: { url: string; title: string }) {
+type Labels = { share: string; copy: string; copied: string };
+
+export function ShareButtons({
+  url,
+  title,
+  labels,
+}: {
+  url: string;
+  title: string;
+  labels: Labels;
+}) {
   const [copied, setCopied] = useState(false);
 
   const twitter = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
@@ -18,24 +28,26 @@ export function ShareButtons({ url, title }: { url: string; title: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // 클립보드 접근 불가 시 무시
+      /* 클립보드 접근 불가 시 무시 */
     }
   }
 
   const base =
-    "rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
+    "pl-ghost rounded-[3px] border border-paper-edge px-3 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-3 transition-colors";
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <span className="text-sm font-semibold text-slate-900">공유하기</span>
+    <div className="flex flex-wrap items-center gap-2.5">
+      <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-2">
+        {labels.share}
+      </span>
       <a href={twitter} target="_blank" rel="noreferrer" className={base}>
-        X(트위터)
+        X
       </a>
       <a href={facebook} target="_blank" rel="noreferrer" className={base}>
-        페이스북
+        Facebook
       </a>
       <button type="button" onClick={copyLink} className={base}>
-        {copied ? "복사됨!" : "링크 복사"}
+        {copied ? labels.copied : labels.copy}
       </button>
     </div>
   );

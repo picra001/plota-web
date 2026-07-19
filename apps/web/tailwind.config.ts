@@ -1,26 +1,32 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  content: [
-    "./src/**/*.{ts,tsx,mdx}",
-    "./content/**/*.{md,mdx}",
-  ],
+  darkMode: ['selector', '[data-theme="dark"]'],
+  content: ["./src/**/*.{ts,tsx,mdx}", "./content/**/*.{md,mdx}"],
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)"],
+        sans: ["var(--font-sans)"],
+        mono: ["var(--font-mono)"],
       },
       colors: {
-        brand: {
-          DEFAULT: "#4f46e5",
-          fg: "#312e81",
+        paper: {
+          DEFAULT: "var(--paper)",
+          2: "var(--paper-2)",
+          3: "var(--paper-3)",
+          edge: "var(--paper-edge)",
         },
-      },
-      typography: {
-        DEFAULT: {
-          css: {
-            maxWidth: "70ch",
-          },
+        ink: {
+          DEFAULT: "var(--ink)",
+          2: "var(--ink-2)",
+          3: "var(--ink-3)",
+          4: "var(--ink-4)",
+        },
+        vermilion: {
+          DEFAULT: "var(--vermilion)",
+          2: "var(--vermilion-2)",
+          ink: "var(--vermilion-ink)",
         },
       },
     },

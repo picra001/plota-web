@@ -1,5 +1,6 @@
-import { getAllPosts } from "@/lib/posts";
-import { site, absoluteUrl } from "@/lib/site";
+import { getDevlogList } from "@/lib/content";
+import { site, siteMeta, absoluteUrl } from "@/lib/site";
+import { defaultLocale, htmlLang } from "@/lib/i18n";
 
 export const dynamic = "force-static";
 
@@ -13,12 +14,13 @@ function escapeXml(unsafe: string): string {
 }
 
 export function GET() {
-  const posts = getAllPosts();
+  const lang = defaultLocale;
+  const posts = getDevlogList(lang);
   const updated = posts[0]?.date ?? new Date().toISOString();
 
   const items = posts
     .map((post) => {
-      const url = absoluteUrl(`/blog/${post.slug}`);
+      const url = absoluteUrl(`/${lang}/devlog/${post.slug}`);
       return `    <item>
       <title>${escapeXml(post.title)}</title>
       <link>${url}</link>
@@ -33,9 +35,9 @@ export function GET() {
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>${escapeXml(site.name)}</title>
-    <link>${site.url}</link>
-    <description>${escapeXml(site.description)}</description>
-    <language>ko-KR</language>
+    <link>${absoluteUrl(`/${lang}`)}</link>
+    <description>${escapeXml(siteMeta[lang].description)}</description>
+    <language>${htmlLang[lang]}</language>
     <lastBuildDate>${new Date(updated).toUTCString()}</lastBuildDate>
     <atom:link href="${absoluteUrl("/feed.xml")}" rel="self" type="application/rss+xml" />
 ${items}
@@ -43,8 +45,6 @@ ${items}
 </rss>`;
 
   return new Response(xml, {
-    headers: {
-      "Content-Type": "application/rss+xml; charset=utf-8",
-    },
+    headers: { "Content-Type": "application/rss+xml; charset=utf-8" },
   });
 }

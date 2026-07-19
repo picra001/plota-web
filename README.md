@@ -1,6 +1,12 @@
 # plota-web
 
-메인 블로그(랜딩) + 토이 프로젝트 허브. SEO · GEO · 서버 비용 최소화를 우선 목표로 한 모노레포.
+PLOTA — "누구나 작가가 될 수 있다". 5개 언어(ko·en·ja·zh·es)로 발행하는 **읽기 전용** 출판 플랫폼.
+에디터 없이 **마크다운 파일**로 글을 쓰고, 모든 페이지가 정적(SSG)으로 생성되어 SEO·GEO·서버 비용에 유리하다.
+
+콘텐츠는 두 종류다.
+
+- **Devlog** — 만드는 과정을 담은 글(마크다운 본문)
+- **Novel** — 컷툰(패널)으로 읽는 짧은 이야기
 
 설계 의도와 전략은 [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) 참고.
 
@@ -9,8 +15,20 @@
 ```text
 plota-web/
 ├─ apps/
-│  └─ web/        # Next.js (App Router) — 랜딩 + 블로그(MDX)  → Vercel 정적 배포
-├─ docs/          # 설계 문서
+│  └─ web/
+│     ├─ src/app/[lang]/            # 언어별 라우트 (ko·en·ja·zh·es), '/'는 /ko로 리다이렉트
+│     │   ├─ page.tsx               # 홈(히어로)
+│     │   ├─ devlog/                # Devlog 목록 / [slug] 상세
+│     │   └─ novel/                 # Novel 목록 / [slug] 상세
+│     ├─ src/lib/                   # i18n · 사전(dictionary) · 콘텐츠 로더 · SEO 헬퍼
+│     ├─ content/                   # ▶ 글 원본 (마크다운)
+│     │   ├─ devlog/{slug}/         #   meta.yml + ko.md en.md ja.md zh.md es.md
+│     │   └─ novels/{slug}/         #   meta.yml + ko.md en.md ja.md zh.md es.md
+│     └─ public/images/             # ▶ 이미지
+│         ├─ devlog/{slug}/...      #   글 본문 그림
+│         ├─ novels/{slug}/...      #   컷툰 패널/표지
+│         └─ motifs/                #   공용 모티프 SVG
+├─ docs/
 └─ (추후) apps/api # NestJS 백엔드, packages/* 공유 패키지
 ```
 
@@ -30,29 +48,93 @@ pnpm build          # 프로덕션 빌드 (정적 생성)
 > 참고: 루트 스크립트는 현재 `pnpm --filter`로 직접 실행합니다. Turborepo는 설치돼 있으나
 > 일부 Windows 환경에서 네이티브 바이너리 실행에 VC++ 재배포 패키지가 필요해, 기본 스크립트에서는 사용하지 않습니다.
 
-## 글 쓰기
+## 글 쓰기 (에디터 없음 — 마크다운만)
 
-`apps/web/content/posts/{slug}.mdx` 파일을 추가하고 frontmatter를 채운 뒤 커밋하면 자동 배포됩니다.
+별도 편집 화면이 없다. **폴더 하나 + 마크다운 파일**을 추가하고 커밋하면 빌드 시 정적 페이지가 만들어진다.
+번역 파일이 없는 언어는 자동으로 **한국어(ko)로 폴백**되므로, 최소 `ko.md` 하나만 있으면 5개 언어 모두에서 글이 노출된다.
 
-```yaml
----
-title: "글 제목"
-description: "한 줄 요약"
-date: 2026-06-30
-slug: my-post
-tags: [tag1, tag2]
-draft: false
----
-```
+> 새 글을 쓸 때는 아래 **예시 폴더를 통째로 복사**해 슬러그(폴더명)만 바꾸고 내용을 채우면 된다.
+> - Devlog 예시: `apps/web/content/devlog/read-only-on-purpose/`
+> - Novel 예시: `apps/web/content/novels/miros-shop/`
+
+### Devlog 글 추가
+
+1. `apps/web/content/devlog/{slug}/` 폴더 생성 (`{slug}`가 URL이 됨 → `/{lang}/devlog/{slug}`)
+2. 공통 메타 `meta.yml` 작성
+
+   ```yaml
+   date: 2026-06-28        # 발행일 (정렬 기준)
+   tag: ENGINEERING        # 상단 라벨
+   cover: cover.png        # (선택) OG 이미지, public/images/devlog/{slug}/ 기준
+   draft: false            # true면 프로덕션에서 숨김
+   ```
+
+3. 언어별 본문 `ko.md`, `en.md`, `ja.md`, `zh.md`, `es.md` 작성
+
+   ```md
+   ---
+   title: "글 제목"
+   description: "한 줄 요약(목록·검색·OG에 사용)"
+   ---
+
+   본문 마크다운. 제목(##), 목록, 인용, 코드블록 사용 가능.
+
+   <figure>
+     <img src="/images/devlog/{slug}/fig-01.svg" alt="설명" />
+     <figcaption>FIG.01 — 캡션</figcaption>
+   </figure>
+   ```
+
+### Novel(컷툰) 추가
+
+1. `apps/web/content/novels/{slug}/` 폴더 생성
+2. `meta.yml` — 에피소드 정보 + 패널 이미지/톤 순서
+
+   ```yaml
+   ep: "014"
+   status: LIVE            # LIVE | DRAFT (표시용 배지)
+   date: 2026-06-20
+   cover: cover.svg
+   draft: false
+   panels:
+     - image: p01.svg      # public/images/novels/{slug}/p01.svg
+       tone: plain         # plain | accent(베르밀리온 강조 컷)
+     - image: p02.svg
+       tone: accent
+   ```
+
+3. 언어별 `{lang}.md` — 제목/로그라인 + 패널 캡션(순서가 `panels`와 1:1로 매칭)
+
+   ```md
+   ---
+   title: "미로의 가게"
+   logline: "문 닫을 시간, 마지막 손님이 들어온다."
+   captions:
+     - "첫 번째 컷 대사/설명"
+     - "두 번째 컷 대사/설명"
+   ---
+   ```
+
+### 이미지 위치 규칙
+
+| 용도 | 경로 | 마크다운/메타에서 참조 |
+|---|---|---|
+| Devlog 본문 그림 | `apps/web/public/images/devlog/{slug}/파일.svg` | `/images/devlog/{slug}/파일.svg` |
+| Novel 패널·표지 | `apps/web/public/images/novels/{slug}/파일.svg` | `meta.yml`의 `image`/`cover`엔 **파일명만** |
+| 공용 모티프 | `apps/web/public/images/motifs/*.svg` | `/images/motifs/graph.svg` 등 |
+
+> `public/` 아래는 빌드 시 도메인 루트로 서빙되므로 본문에서는 항상 `/images/...` 절대경로로 쓴다.
 
 ## SEO / GEO 산출물
 
 | 경로 | 설명 |
 |---|---|
-| `/sitemap.xml` | 자동 생성 사이트맵 |
+| `/sitemap.xml` | 모든 언어·글 URL + `hreflang`/`x-default` 대체 링크 |
 | `/robots.txt` | 크롤러 허용 + 사이트맵 |
-| `/feed.xml` | RSS 피드 |
+| `/feed.xml` | RSS 피드(기본 언어 Devlog) |
 | `/llms.txt` | 생성형 엔진(GEO)용 콘텐츠 요약 |
+
+추가로 각 페이지에 언어별 `<link rel="alternate" hreflang>`, canonical, Open Graph(locale), JSON-LD(WebSite/Article/CreativeWork)가 자동 출력된다.
 
 ## 배포 (분리 배포)
 

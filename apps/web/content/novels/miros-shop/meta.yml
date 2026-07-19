@@ -1,0 +1,16 @@
+ep: "014"
+status: LIVE
+date: 2026-06-20
+cover: cover.svg
+draft: false
+panels:
+  - image: p01.svg
+    tone: plain
+  - image: p02.svg
+    tone: plain
+  - image: p03.svg
+    tone: plain
+  - image: p04.svg
+    tone: accent
+  - image: p05.svg
+    tone: plain

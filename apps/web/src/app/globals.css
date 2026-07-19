@@ -1,10 +1,47 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   PLOTA 디자인 토큰 — 종이(paper) / 먹(ink) / 베르밀리온(vermilion)
+   폰트 변수(--font-*)는 next/font 가 <html>에 주입한다.
+--------------------------------------------------------------------------- */
 :root {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --paper: #f4efe4;
+  --paper-2: #ece6d7;
+  --paper-3: #e2dbc8;
+  --paper-edge: #d6cdb6;
+  --ink: #1a1714;
+  --ink-2: #4a4239;
+  --ink-3: #807665;
+  --ink-4: #b5ac97;
+  --vermilion: #c5331f;
+  --vermilion-2: #a8281a;
+  --vermilion-ink: #7a1e13;
+
+  --font-display: var(--font-instrument-serif), "Pretendard", ui-serif, Georgia, serif;
+  --font-sans: var(--font-geist), "Pretendard", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+[data-theme="dark"] {
+  --paper: #15110d;
+  --paper-2: #1e1914;
+  --paper-3: #2a231c;
+  --paper-edge: #3a3127;
+  --ink: #f1eadb;
+  --ink-2: #c9bfa9;
+  --ink-3: #8e8470;
+  --ink-4: #5c5447;
+  --vermilion: #e85b43;
+  --vermilion-2: #c5331f;
+  --vermilion-ink: #f19984;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 html {
@@ -12,52 +49,190 @@ html {
 }
 
 body {
-  @apply bg-white text-slate-800 antialiased;
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  transition: background 200ms ease, color 200ms ease;
 }
 
-/* MDX 본문 기본 타이포그래피 (플러그인 없이 최소 스타일) */
-.prose h2 {
-  @apply mt-10 mb-4 text-2xl font-bold text-slate-900;
+img {
+  display: block;
+  max-width: 100%;
 }
-.prose h3 {
-  @apply mt-8 mb-3 text-xl font-semibold text-slate-900;
+
+/* 진입 애니메이션 (stagger) */
+@keyframes plRise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pl-stagger > * {
+  animation: plRise 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pl-stagger > *:nth-child(2) {
+  animation-delay: 60ms;
+}
+.pl-stagger > *:nth-child(3) {
+  animation-delay: 120ms;
+}
+.pl-stagger > *:nth-child(4) {
+  animation-delay: 180ms;
+}
+.pl-stagger > *:nth-child(5) {
+  animation-delay: 240ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-stagger > * {
+    animation: none;
+  }
+}
+
+/* 인터랙션 (디자인 원본의 hover 규칙 이식) */
+.pl-navlink:hover {
+  color: var(--ink) !important;
+}
+.pl-row:hover .pl-rowtitle {
+  color: var(--vermilion);
+}
+.pl-row:hover .pl-arrow {
+  transform: translateX(4px);
+  opacity: 1;
+}
+.pl-cover:hover .pl-coverframe {
+  border-color: var(--vermilion);
+}
+.pl-cover:hover .pl-covertitle {
+  color: var(--vermilion);
+}
+.pl-btn-pri:hover {
+  background: var(--vermilion-2);
+}
+.pl-btn-pri:active {
+  transform: translateY(1px);
+}
+.pl-btn-sec:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+.pl-ghost:hover {
+  color: var(--ink);
+}
+.pl-langopt:hover {
+  background: var(--paper-3);
+}
+
+/* ---------------------------------------------------------------------------
+   Devlog 본문(.prose) — 종이/먹 톤에 맞춘 마크다운 타이포그래피
+--------------------------------------------------------------------------- */
+.prose {
+  font-family: var(--font-sans);
+  color: var(--ink);
 }
 .prose p {
-  @apply my-4 leading-7 text-slate-700;
+  font-size: 17px;
+  line-height: 1.72;
+  margin: 0 0 24px;
 }
-.prose ul {
-  @apply my-4 list-disc pl-6 text-slate-700;
+.prose h2 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(22px, 3.4vw, 28px);
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  margin: 44px 0 16px;
 }
-.prose ol {
-  @apply my-4 list-decimal pl-6 text-slate-700;
-}
-.prose li {
-  @apply my-1;
+.prose h3 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(18px, 2.6vw, 21px);
+  margin: 32px 0 12px;
 }
 .prose a {
-  @apply text-brand underline underline-offset-2 hover:opacity-80;
+  color: var(--vermilion);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
-.prose pre {
-  @apply my-6 overflow-x-auto rounded-lg bg-slate-900 p-4 text-sm text-slate-100;
+.prose strong {
+  font-weight: 600;
+  color: var(--ink);
 }
-.prose code {
-  @apply rounded bg-slate-100 px-1.5 py-0.5 text-sm text-slate-800;
+.prose ul,
+.prose ol {
+  font-size: 17px;
+  line-height: 1.72;
+  color: var(--ink);
+  margin: 0 0 24px;
+  padding-left: 1.4em;
 }
-.prose pre code {
-  @apply bg-transparent p-0 text-slate-100;
+.prose ul {
+  list-style: square;
+}
+.prose li {
+  margin: 6px 0;
+}
+.prose li::marker {
+  color: var(--vermilion);
 }
 .prose blockquote {
-  @apply my-6 border-l-4 border-brand/40 pl-4 italic text-slate-600;
+  margin: 0 0 24px;
+  padding: 4px 0 4px 20px;
+  border-left: 2px solid var(--vermilion);
+  color: var(--ink-2);
+  font-style: italic;
+}
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--paper-2);
+  border: 1px solid var(--paper-edge);
+  border-radius: 2px;
+  padding: 1px 5px;
+}
+.prose pre {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  background: var(--paper-2);
+  border: 1.5px solid var(--ink);
+  border-radius: 0;
+  padding: 18px;
+  overflow-x: auto;
+  margin: 0 0 28px;
+}
+.prose pre code {
+  background: none;
+  border: none;
+  padding: 0;
 }
 .prose img {
-  @apply my-6 h-auto w-full rounded-lg border border-slate-200;
+  width: 100%;
+  height: auto;
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+  margin: 8px 0 12px;
 }
 .prose figure {
-  @apply my-6;
+  margin: 8px 0 32px;
 }
 .prose figure img {
-  @apply my-0;
+  margin: 0;
 }
 .prose figcaption {
-  @apply mt-2 text-center text-sm text-slate-500;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  margin-top: 10px;
+}
+.prose hr {
+  border: none;
+  border-top: 1px solid var(--paper-edge);
+  margin: 40px 0;
 }
