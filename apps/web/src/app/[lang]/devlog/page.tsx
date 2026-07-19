@@ -6,30 +6,32 @@ import { getDictionary } from "@/lib/dictionary";
 import { getDevlogList } from "@/lib/content";
 import { languageAlternates } from "@/lib/seo";
 
-export function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
-  params: { lang: string };
-}): Metadata {
-  if (!isLocale(params.lang)) return {};
-  const dict = getDictionary(params.lang);
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  if (!isLocale(lang)) return {};
+  const dict = getDictionary(lang);
   return {
     title: dict.nav.devlog,
     description: dict.dev.desc,
     alternates: {
-      canonical: `/${params.lang}/devlog`,
+      canonical: `/${lang}/devlog`,
       languages: languageAlternates((l) => `/${l}/devlog`),
     },
   };
 }
 
-export default function DevlogIndexPage({
+export default async function DevlogIndexPage({
   params,
 }: {
-  params: { lang: string };
+  params: Promise<{ lang: string }>;
 }) {
-  if (!isLocale(params.lang)) notFound();
-  const lang = params.lang as Locale;
+  const { lang: langParam } = await params;
+  if (!isLocale(langParam)) notFound();
+  const lang = langParam as Locale;
   const dict = getDictionary(lang);
   const posts = getDevlogList(lang);
 

@@ -22,13 +22,13 @@ export function generateStaticParams() {
   return locales.map((lang) => ({ lang }));
 }
 
-export function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
-  params: { lang: string };
-}): Metadata {
-  if (!isLocale(params.lang)) return {};
-  const lang = params.lang;
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  if (!isLocale(lang)) return {};
   const meta = siteMeta[lang];
 
   return {
@@ -59,15 +59,16 @@ export function generateMetadata({
 
 const NO_FLASH_THEME = `(function(){try{var t=localStorage.getItem('plota-theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'paper';}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'');}catch(e){}})();`;
 
-export default function LangLayout({
+export default async function LangLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: { lang: string };
+  params: Promise<{ lang: string }>;
 }) {
-  if (!isLocale(params.lang)) notFound();
-  const lang = params.lang as Locale;
+  const { lang: langParam } = await params;
+  if (!isLocale(langParam)) notFound();
+  const lang = langParam as Locale;
   const dict = getDictionary(lang);
 
   const jsonLd = {
@@ -103,6 +104,7 @@ export default function LangLayout({
             className="font-sans text-base font-bold tracking-[-0.01em] text-ink"
           >
             PLOT<span className="text-vermilion">A</span>
+            <span className="font-mono text-[9px] tracking-normal text-ink-3">.AI</span>
           </Link>
           <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-3">
             {dict.ui.footer}

@@ -6,30 +6,32 @@ import { getDictionary } from "@/lib/dictionary";
 import { getNovelList } from "@/lib/content";
 import { languageAlternates } from "@/lib/seo";
 
-export function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
-  params: { lang: string };
-}): Metadata {
-  if (!isLocale(params.lang)) return {};
-  const dict = getDictionary(params.lang);
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  if (!isLocale(lang)) return {};
+  const dict = getDictionary(lang);
   return {
     title: dict.nav.novel,
     description: dict.nov.desc,
     alternates: {
-      canonical: `/${params.lang}/novel`,
+      canonical: `/${lang}/novel`,
       languages: languageAlternates((l) => `/${l}/novel`),
     },
   };
 }
 
-export default function NovelIndexPage({
+export default async function NovelIndexPage({
   params,
 }: {
-  params: { lang: string };
+  params: Promise<{ lang: string }>;
 }) {
-  if (!isLocale(params.lang)) notFound();
-  const lang = params.lang as Locale;
+  const { lang: langParam } = await params;
+  if (!isLocale(langParam)) notFound();
+  const lang = langParam as Locale;
   const dict = getDictionary(lang);
   const novels = getNovelList(lang);
 

@@ -4,11 +4,13 @@
   "private": true,
   "packageManager": "pnpm@9.15.9",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "pnpm --filter @plota/web dev",
     "build": "pnpm --filter @plota/web build",
+    "preview": "pnpm --filter @plota/web run preview",
+    "deploy": "pnpm --filter @plota/web run deploy",
     "start": "pnpm --filter @plota/web start",
     "lint": "pnpm --filter @plota/web lint"
   },

@@ -66,6 +66,7 @@ export function SiteHeader({
         className="font-sans text-[22px] font-bold leading-none tracking-[-0.01em] text-ink"
       >
         PLOT<span className="text-vermilion">A</span>
+        <span className="font-mono text-[10px] tracking-normal text-ink-3">.AI</span>
       </Link>
 
       <nav className="ml-2 flex flex-1 gap-[22px]">

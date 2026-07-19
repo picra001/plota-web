@@ -13,16 +13,17 @@ export function generateStaticParams() {
   return getNovelSlugs().map((slug) => ({ slug }));
 }
 
-export function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
-  params: { lang: string; slug: string };
-}): Metadata {
-  if (!isLocale(params.lang)) return {};
-  const novel = getNovelPost(params.lang, params.slug);
+  params: Promise<{ lang: string; slug: string }>;
+}): Promise<Metadata> {
+  const { lang, slug } = await params;
+  if (!isLocale(lang)) return {};
+  const novel = getNovelPost(lang, slug);
   if (!novel) return {};
 
-  const path = `/${params.lang}/novel/${novel.slug}`;
+  const path = `/${lang}/novel/${novel.slug}`;
   return {
     title: novel.title,
     description: novel.logline,
@@ -32,7 +33,7 @@ export function generateMetadata({
     },
     openGraph: {
       type: "article",
-      locale: ogLocale[params.lang],
+      locale: ogLocale[lang],
       url: absoluteUrl(path),
       title: novel.title,
       description: novel.logline,
@@ -47,15 +48,16 @@ export function generateMetadata({
   };
 }
 
-export default function NovelPostPage({
+export default async function NovelPostPage({
   params,
 }: {
-  params: { lang: string; slug: string };
+  params: Promise<{ lang: string; slug: string }>;
 }) {
-  if (!isLocale(params.lang)) notFound();
-  const lang = params.lang as Locale;
+  const { lang: langParam, slug } = await params;
+  if (!isLocale(langParam)) notFound();
+  const lang = langParam as Locale;
   const dict = getDictionary(lang);
-  const novel = getNovelPost(lang, params.slug);
+  const novel = getNovelPost(lang, slug);
   if (!novel) notFound();
 
   const jsonLd = {

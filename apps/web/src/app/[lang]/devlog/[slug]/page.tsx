@@ -15,16 +15,17 @@ export function generateStaticParams() {
   return getDevlogSlugs().map((slug) => ({ slug }));
 }
 
-export function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
-  params: { lang: string; slug: string };
-}): Metadata {
-  if (!isLocale(params.lang)) return {};
-  const post = getDevlogPost(params.lang, params.slug);
+  params: Promise<{ lang: string; slug: string }>;
+}): Promise<Metadata> {
+  const { lang, slug } = await params;
+  if (!isLocale(lang)) return {};
+  const post = getDevlogPost(lang, slug);
   if (!post) return {};
 
-  const path = `/${params.lang}/devlog/${post.slug}`;
+  const path = `/${lang}/devlog/${post.slug}`;
   return {
     title: post.title,
     description: post.description,
@@ -34,7 +35,7 @@ export function generateMetadata({
     },
     openGraph: {
       type: "article",
-      locale: ogLocale[params.lang],
+      locale: ogLocale[lang],
       url: absoluteUrl(path),
       title: post.title,
       description: post.description,
@@ -50,15 +51,16 @@ export function generateMetadata({
   };
 }
 
-export default function DevlogPostPage({
+export default async function DevlogPostPage({
   params,
 }: {
-  params: { lang: string; slug: string };
+  params: Promise<{ lang: string; slug: string }>;
 }) {
-  if (!isLocale(params.lang)) notFound();
-  const lang = params.lang as Locale;
+  const { lang: langParam, slug } = await params;
+  if (!isLocale(langParam)) notFound();
+  const lang = langParam as Locale;
   const dict = getDictionary(lang);
-  const post = getDevlogPost(lang, params.slug);
+  const post = getDevlogPost(lang, slug);
   if (!post) notFound();
 
   const url = absoluteUrl(`/${lang}/devlog/${post.slug}`);

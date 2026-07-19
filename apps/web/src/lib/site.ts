@@ -1,7 +1,7 @@
 import type { Locale } from "./i18n";
 
 export const site = {
-  name: "PLOTA",
+  name: "PLOTA.AI",
   // 배포 도메인이 정해지면 환경변수(NEXT_PUBLIC_SITE_URL)로 덮어쓴다.
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://plota.dev",
   author: {
@@ -13,29 +13,29 @@ export const site = {
 /** 언어별 사이트 타이틀 / 설명 (메타데이터·OG·JSON-LD 공용) */
 export const siteMeta: Record<Locale, { title: string; description: string }> = {
   ko: {
-    title: "PLOTA — 누구나 작가가 될 수 있다",
+    title: "PLOTA.AI — 손으로 그린 2D를 3D 모델로",
     description:
-      "PLOTA는 다섯 언어로 발행하는 읽기 전용 출판 플랫폼입니다. 만드는 과정을 담은 Devlog와 컷툰으로 읽는 Novel.",
+      "PLOTA.AI는 사람이 그린 2D 이미지를 3D 모델로 변환합니다. 무료 웹 변환과 무료 로컬 설치 프로그램을 준비하고 있습니다.",
   },
   en: {
-    title: "PLOTA — Anyone can become a writer",
+    title: "PLOTA.AI — From hand-drawn 2D to 3D",
     description:
-      "PLOTA is a read-only publishing space in five languages. A Devlog of the making, and Novels told in cut-toon panels.",
+      "PLOTA.AI turns hand-drawn 2D images into 3D models, with a free web workflow and a free local installer in development.",
   },
   ja: {
-    title: "PLOTA — 誰もが作家になれる",
+    title: "PLOTA.AI — 手描きの2Dを3Dモデルへ",
     description:
-      "PLOTA は5言語で発行する閲覧専用の出版プラットフォーム。つくる過程の Devlog と、カット漫画で読む Novel。",
+      "PLOTA.AIは手描きの2D画像を3Dモデルに変換します。無料のWeb版とローカルインストーラーを開発中です。",
   },
   zh: {
-    title: "PLOTA — 人人都能成为作家",
+    title: "PLOTA.AI — 将手绘2D变为3D模型",
     description:
-      "PLOTA 是一个以五种语言发布的只读出版平台。记录创作过程的 Devlog，与用条漫讲述的 Novel。",
+      "PLOTA.AI将手绘2D图像转换为3D模型，免费Web工作流与免费本地安装程序正在开发中。",
   },
   es: {
-    title: "PLOTA — Cualquiera puede ser escritor",
+    title: "PLOTA.AI — De dibujos 2D a modelos 3D",
     description:
-      "PLOTA es un espacio de publicación de solo lectura en cinco idiomas. Un Devlog del proceso y Novelas en viñetas.",
+      "PLOTA.AI convierte imágenes 2D dibujadas a mano en modelos 3D, con una versión web y un instalador local gratuitos en desarrollo.",
   },
 };
 
