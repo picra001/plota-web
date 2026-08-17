@@ -5,7 +5,12 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { locales, localeName, localeShort, type Locale } from "@/lib/i18n";
 
-type NavLabels = { home: string; devlog: string; novel: string };
+type NavLabels = {
+  generate: string;
+  devlog: string;
+  novel: string;
+  lab: string;
+};
 
 export function SiteHeader({
   locale,
@@ -48,14 +53,25 @@ export function SiteHeader({
   }
 
   const base = `/${locale}`;
-  const isHome = pathname === base;
-  const isDevlog = pathname.startsWith(`${base}/devlog`);
-  const isNovel = pathname.startsWith(`${base}/novel`);
 
+  // Generate FBX는 전용 페이지가 생길 때까지 첫 페이지를 가리킨다
   const items: { label: string; href: string; active: boolean }[] = [
-    { label: nav.home, href: base, active: isHome },
-    { label: nav.devlog, href: `${base}/devlog`, active: isDevlog },
-    { label: nav.novel, href: `${base}/novel`, active: isNovel },
+    { label: nav.generate, href: base, active: pathname === base },
+    {
+      label: nav.devlog,
+      href: `${base}/devlog`,
+      active: pathname.startsWith(`${base}/devlog`),
+    },
+    {
+      label: nav.novel,
+      href: `${base}/novel`,
+      active: pathname.startsWith(`${base}/novel`),
+    },
+    {
+      label: nav.lab,
+      href: `${base}/lab`,
+      active: pathname.startsWith(`${base}/lab`),
+    },
   ];
 
   return (
@@ -66,7 +82,6 @@ export function SiteHeader({
         className="font-sans text-[22px] font-bold leading-none tracking-[-0.01em] text-ink"
       >
         PLOT<span className="text-vermilion">A</span>
-        <span className="font-mono text-[10px] tracking-normal text-ink-3">.AI</span>
       </Link>
 
       <nav className="ml-2 flex flex-1 gap-[22px]">

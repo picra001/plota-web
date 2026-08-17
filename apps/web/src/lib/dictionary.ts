@@ -4,7 +4,7 @@ type Motto = { pre: string; accent: string; post: string };
 type HomeItem = { label: string; description: string };
 
 export type Dictionary = {
-  nav: { home: string; devlog: string; novel: string };
+  nav: { generate: string; devlog: string; novel: string; lab: string };
   home: {
     eyebrow: string;
     status: string;
@@ -17,6 +17,7 @@ export type Dictionary = {
   };
   dev: { eyebrow: string; title: Motto; desc: string };
   nov: { eyebrow: string; title: Motto; desc: string };
+  lab: { eyebrow: string; title: Motto; desc: string; soon: string };
   ui: {
     back: string;
     next: string;
@@ -40,7 +41,12 @@ export type Dictionary = {
 
 export const dictionary: Record<Locale, Dictionary> = {
   ko: {
-    nav: { home: "홈", devlog: "Devlog", novel: "Novel" },
+    nav: {
+      generate: "Generate FBX",
+      devlog: "Devlog",
+      novel: "Novel",
+      lab: "Lab",
+    },
     home: {
       eyebrow: "PLOTA.AI · 2D TO 3D",
       status: "서비스 준비 중",
@@ -91,6 +97,12 @@ export const dictionary: Record<Locale, Dictionary> = {
       title: { pre: "한 컷씩, ", accent: "이야기", post: "." },
       desc: "컷툰으로 읽는 짧은 소설. 모바일에서 위로 넘기며 한 편을 끝까지.",
     },
+    lab: {
+      eyebrow: "LAB · 실험 서비스",
+      title: { pre: "만들다 만 ", accent: "실험", post: "들." },
+      desc: "아직 정식 기능이 아닌 도구들을 직접 써보는 공간입니다. 목록에서 하나를 골라 실행해 보세요.",
+      soon: "준비 중",
+    },
     ui: {
       back: "목록으로",
       next: "다음 편",
@@ -112,7 +124,12 @@ export const dictionary: Record<Locale, Dictionary> = {
     },
   },
   en: {
-    nav: { home: "Home", devlog: "Devlog", novel: "Novel" },
+    nav: {
+      generate: "Generate FBX",
+      devlog: "Devlog",
+      novel: "Novel",
+      lab: "Lab",
+    },
     home: {
       eyebrow: "PLOTA.AI · 2D TO 3D",
       status: "In development",
@@ -161,6 +178,12 @@ export const dictionary: Record<Locale, Dictionary> = {
       title: { pre: "Frame by ", accent: "frame", post: "." },
       desc: "Short fiction told in cut-toon panels. Swipe up on mobile, one episode end to end.",
     },
+    lab: {
+      eyebrow: "LAB · EXPERIMENTS",
+      title: { pre: "Half-built ", accent: "experiments", post: "." },
+      desc: "A place to try tools that are not products yet. Pick one from the list and run it.",
+      soon: "Soon",
+    },
     ui: {
       back: "Back to list",
       next: "Next",
@@ -182,7 +205,12 @@ export const dictionary: Record<Locale, Dictionary> = {
     },
   },
   ja: {
-    nav: { home: "ホーム", devlog: "Devlog", novel: "Novel" },
+    nav: {
+      generate: "Generate FBX",
+      devlog: "Devlog",
+      novel: "Novel",
+      lab: "Lab",
+    },
     home: {
       eyebrow: "PLOTA.AI · 2D TO 3D",
       status: "開発中",
@@ -227,6 +255,12 @@ export const dictionary: Record<Locale, Dictionary> = {
       title: { pre: "一コマずつ、", accent: "物語", post: "。" },
       desc: "カット漫画で読む短い物語。スマホで上にスワイプ、一話を最後まで。",
     },
+    lab: {
+      eyebrow: "LAB · 実験サービス",
+      title: { pre: "つくりかけの", accent: "実験", post: "。" },
+      desc: "まだ正式機能ではないツールを試せる場所です。リストから一つ選んで実行してください。",
+      soon: "準備中",
+    },
     ui: {
       back: "一覧へ",
       next: "次へ",
@@ -248,7 +282,12 @@ export const dictionary: Record<Locale, Dictionary> = {
     },
   },
   zh: {
-    nav: { home: "首页", devlog: "开发日志", novel: "小说" },
+    nav: {
+      generate: "Generate FBX",
+      devlog: "开发日志",
+      novel: "小说",
+      lab: "Lab",
+    },
     home: {
       eyebrow: "PLOTA.AI · 2D TO 3D",
       status: "开发中",
@@ -288,6 +327,12 @@ export const dictionary: Record<Locale, Dictionary> = {
       title: { pre: "一格一格，", accent: "讲故事", post: "。" },
       desc: "用条漫格子讲述的短篇。手机上向上滑动，一口气读完一话。",
     },
+    lab: {
+      eyebrow: "LAB · 实验服务",
+      title: { pre: "尚未完成的", accent: "实验", post: "。" },
+      desc: "这里可以试用尚未正式发布的工具。从列表中选择一个即可运行。",
+      soon: "即将上线",
+    },
     ui: {
       back: "返回列表",
       next: "下一篇",
@@ -309,7 +354,12 @@ export const dictionary: Record<Locale, Dictionary> = {
     },
   },
   es: {
-    nav: { home: "Inicio", devlog: "Devlog", novel: "Novel" },
+    nav: {
+      generate: "Generate FBX",
+      devlog: "Devlog",
+      novel: "Novel",
+      lab: "Lab",
+    },
     home: {
       eyebrow: "PLOTA.AI · 2D TO 3D",
       status: "En desarrollo",
@@ -355,6 +405,12 @@ export const dictionary: Record<Locale, Dictionary> = {
       eyebrow: "NOVEL · NOVELAS VISUALES",
       title: { pre: "Viñeta a ", accent: "viñeta", post: "." },
       desc: "Ficción breve contada en viñetas. Desliza en el móvil, un episodio de principio a fin.",
+    },
+    lab: {
+      eyebrow: "LAB · EXPERIMENTOS",
+      title: { pre: "Experimentos a medio ", accent: "construir", post: "." },
+      desc: "Un espacio para probar herramientas que aún no son productos. Elige una de la lista y ejecútala.",
+      soon: "Pronto",
     },
     ui: {
       back: "Volver a la lista",
