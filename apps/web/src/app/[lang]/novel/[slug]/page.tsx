@@ -3,7 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale, htmlLang, ogLocale, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/dictionary";
-import { getNovelPost, getNovelSlugs } from "@/lib/content";
+import {
+  getBreadcrumb,
+  getNovelPost,
+  getNovelSlugs,
+  getSiblings,
+} from "@/lib/content";
 import { site, absoluteUrl } from "@/lib/site";
 import { languageAlternates } from "@/lib/seo";
 
@@ -60,6 +65,9 @@ export default async function NovelPostPage({
   const novel = getNovelPost(lang, slug);
   if (!novel) notFound();
 
+  const trail = getBreadcrumb("novel", lang, novel.slug);
+  const { prev, next } = getSiblings("novel", lang, novel.slug);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
@@ -78,14 +86,24 @@ export default async function NovelPostPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <Link
-        href={`/${lang}/novel`}
-        className="pl-ghost inline-flex items-center gap-[7px] whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3 transition-colors"
+      <nav
+        aria-label={dict.ui.contents}
+        className="flex flex-wrap items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3"
       >
-        <span className="text-sm">←</span> {dict.ui.back}
-      </Link>
+        <Link href={`/${lang}/novel`} className="pl-ghost transition-colors">
+          {dict.nav.novel}
+        </Link>
+        {trail.map((folder) => (
+          <span key={folder.key} className="flex items-center gap-1.5">
+            <span aria-hidden className="text-ink-4">
+              /
+            </span>
+            <span>{folder.title}</span>
+          </span>
+        ))}
+      </nav>
 
-      <div className="mt-[30px] font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">
+      <div className="mt-[26px] font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">
         EP {novel.ep} · {novel.status === "LIVE" ? dict.ui.statusLive : dict.ui.statusDraft}
       </div>
       <h1 className="m-0 mt-2.5 font-display text-[clamp(38px,7vw,58px)] font-normal italic leading-[1.04]">
@@ -145,12 +163,22 @@ export default async function NovelPostPage({
             />
           ))}
         </div>
-        <Link
-          href={`/${lang}/novel`}
-          className="pl-btn-pri inline-flex items-center gap-2 rounded-[3px] border-[1.5px] border-transparent bg-vermilion px-[18px] py-[11px] font-sans text-sm font-medium text-[#F4EFE4] transition-all"
-        >
-          {dict.ui.next} <span className="font-mono">→</span>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {prev && (
+            <Link
+              href={`/${lang}/novel/${prev.slug}`}
+              className="pl-btn-sec inline-flex items-center gap-2 rounded-[3px] border-[1.5px] border-ink px-[16px] py-[10px] font-sans text-sm font-medium text-ink transition-all"
+            >
+              <span className="font-mono">←</span> {dict.ui.prev}
+            </Link>
+          )}
+          <Link
+            href={next ? `/${lang}/novel/${next.slug}` : `/${lang}/novel`}
+            className="pl-btn-pri inline-flex items-center gap-2 rounded-[3px] border-[1.5px] border-transparent bg-vermilion px-[18px] py-[11px] font-sans text-sm font-medium text-[#F4EFE4] transition-all"
+          >
+            {next ? dict.ui.next : dict.ui.back} <span className="font-mono">→</span>
+          </Link>
+        </div>
       </div>
     </article>
   );

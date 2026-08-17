@@ -41,8 +41,9 @@ pnpm --filter @plota/web dev   # http://localhost:3000
 pnpm --filter @plota/web build # 정적 빌드 검증
 ```
 
-- 글 추가: `apps/web/content/posts/{slug}.mdx` (frontmatter 규약은 ARCHITECTURE.md)
-- 이미지: `apps/web/public/images/posts/` 에 두고 `![](/images/posts/파일명)`
+- 글 추가: `apps/web/content/devlog/<폴더…>/{slug}/{meta.yml, ko.md}` (규약은 ARCHITECTURE.md 4장)
+- 폴더 추가: 디렉터리를 만들고 `_folder.yml` 에 `order` · `title` 을 넣으면 왼쪽 목차에 반영된다
+- 이미지: `apps/web/public/images/devlog/{slug}/` 에 두고 `![](/images/devlog/{slug}/파일명)`
 
 ## 남은 일 (TODO)
 

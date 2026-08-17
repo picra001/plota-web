@@ -1,0 +1,42 @@
+---
+description: PLOTA 웹 앱의 GEO·WebMCP·에이전트 친화적 구현 규칙
+globs: "apps/web/**/*.{ts,tsx,md,mdx,yml,yaml}"
+alwaysApply: false
+---
+
+# GEO 및 WebMCP 규칙
+
+## 기본 원칙
+
+- 우선순위는 SEO → GEO → 서버 비용 최소화 순서로 판단한다.
+- 현재 사이트는 Next.js SSG 기반 읽기 전용 출판 사이트다. 존재하지 않는 인증, DB, mutation API를 가정하지 않는다.
+- 기존 사람용 UI, 접근성, 시맨틱 HTML을 기준으로 구현하고 AI 전용 기능은 점진적 향상으로 추가한다.
+- 콘텐츠는 사람과 검색·생성형 엔진 모두 이해할 수 있는 자족적이고 사실적인 문장으로 작성한다. 키워드 반복이나 숨겨진 AI 전용 문구를 만들지 않는다.
+
+## GEO
+
+- 페이지마다 고유한 title, description, canonical, hreflang과 적절한 JSON-LD 타입을 유지한다.
+- 제목 계층, `<article>`, `<nav>`, `<time dateTime>`, 이미지 대체 텍스트와 내부 링크를 의미에 맞게 사용한다.
+- 글 요약은 원문 없이도 핵심을 이해할 수 있게 작성하되, 원문에 없는 주장·수치·FAQ를 생성하지 않는다.
+- 콘텐츠 라우트가 바뀌면 sitemap, RSS, `llms.txt`, canonical, hreflang과 기존 URL 리다이렉트를 함께 점검한다.
+- `llms.txt`는 공개된 비초안 콘텐츠만 포함하며 안정적인 절대 URL과 짧고 구체적인 설명을 제공한다.
+- 다국어 콘텐츠는 번역본의 canonical/hreflang 관계와 한국어 폴백 동작을 보존한다.
+
+## WebMCP
+
+- WebMCP는 실험 기능이므로 `document.modelContext`를 기능 감지하고, 미지원 브라우저에서도 기존 기능이 완전히 동작해야 한다.
+- 초기 도구는 콘텐츠 탐색·읽기·언어 이동처럼 읽기 전용 기능으로 제한하고 `readOnlyHint: true`를 표시한다.
+- 도구 하나는 겹치지 않는 단일 목적만 수행한다. 동작을 나타내는 명확한 이름, 사용 시점이 드러나는 설명, 구체적인 JSON Schema를 사용한다.
+- 현재 페이지 상태에서 유효한 도구만 등록하고 페이지 이탈이나 상태 변경 시 `AbortSignal`로 해제한다.
+- 스키마만 신뢰하지 말고 실행 코드에서 인자, locale, content type, slug와 공개 여부를 엄격히 검증한다.
+- 초안, 비공개 데이터, 파일 경로, 환경변수 또는 불필요한 전체 HTML을 도구 결과로 노출하지 않는다.
+- 결과는 에이전트가 재파싱하기 쉬운 짧은 구조화 데이터와 유효한 URL로 반환하고, 실패는 재시도 가능 여부가 드러나는 명확한 오류로 반환한다.
+- 외부·사용자 생성 콘텐츠를 반환하면 `untrustedContentHint: true`를 사용한다. cross-origin 노출은 기본 금지한다.
+- 향후 쓰기·공유·구독 도구를 추가할 때는 기존 인증·권한·CSRF·rate limit을 우회하지 말고 중요한 부작용 전에 사용자 확인을 요구한다.
+- WebMCP는 SEO, 시맨틱 HTML, JSON-LD, sitemap, RSS 또는 `llms.txt`를 대체하지 않는다.
+
+## 검증
+
+- 도구 로직·인자 검증·UI 상태 반영은 결정적 테스트로 검증한다.
+- 대표적인 한국어·영어·일본어 요청으로 올바른 도구 선택, 인자, 결과와 오류 복구를 평가한다.
+- 공개 전 Chrome WebMCP Inspector와 Lighthouse에서 등록 도구와 Schema를 확인한다.

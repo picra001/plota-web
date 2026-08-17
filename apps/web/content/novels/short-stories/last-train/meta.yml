@@ -1,0 +1,11 @@
+ep: "015"
+status: LIVE
+date: 2026-07-11
+cover: cover.svg
+draft: false
+panels:
+  - image: p01.svg
+    tone: plain
+  - tone: plain
+  - tone: accent
+  - tone: plain

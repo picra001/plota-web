@@ -99,19 +99,63 @@ Vercel은 서버리스(요청마다 함수 기동) 모델이라 **상시 구동�
 
 ## 4. 콘텐츠(글) 작성 규약
 
-글은 `apps/web/content/posts/{slug}.mdx` 에 작성한다. Frontmatter 표준:
+글은 `apps/web/content/devlog/` · `apps/web/content/novels/` 아래에 **폴더 계층**으로 둔다.
+디렉터리 구조가 그대로 사이트의 목차(왼쪽 트리)가 된다.
+
+```text
+content/devlog/
+  engineering/                  # 폴더
+    _folder.yml
+    read-only-on-purpose/       # 글
+      meta.yml
+      ko.md  en.md  ja.md  zh.md  es.md
+    pipeline/                   # 폴더 (중첩 깊이 제한 없음)
+      _folder.yml
+      content-as-files/
+        meta.yml
+        ko.md
+  release-notes/                # 폴더에 속하지 않은 글
+    meta.yml
+    ko.md
+```
+
+- `{locale}.md` 를 하나라도 가진 디렉터리는 **글**, 아니면 **폴더**로 본다.
+- 번역이 없는 언어는 `ko.md` 로 폴백한다.
+- **slug(글 디렉터리 이름)은 섹션 안에서 유일해야 한다.** URL은 `/{lang}/devlog/{slug}` 로
+  폴더 경로를 포함하지 않으므로, 글을 다른 폴더로 옮겨도 링크와 SEO가 유지된다.
+- 이미지는 slug 기준으로 `public/images/devlog/{slug}/` · `public/images/novels/{slug}/` 에 둔다.
+
+`_folder.yml` — 폴더의 표시 이름과 정렬:
+
+```yaml
+order: 10                    # 작을수록 위. 생략 시 맨 뒤
+icon: "◈"                    # 선택
+title:                       # 언어별 표시 이름. 없으면 ko → 디렉터리 이름 순으로 폴백
+  ko: 엔지니어링
+  en: Engineering
+```
+
+`meta.yml` — 글의 언어 공통 메타 (devlog):
+
+```yaml
+date: 2026-06-30             # 발행일 (ISO)
+tag: PROCESS                 # 목록·상세에 노출되는 분류 배지
+order: 10                    # 선택. 지정하면 같은 폴더 안에서 우선 정렬(기본은 최신순)
+cover: cover.svg             # 선택. public/images/devlog/{slug}/ 기준 파일명
+draft: false                 # true면 프로덕션 빌드에서 제외
+```
+
+`{locale}.md` — 언어별 본문과 frontmatter:
 
 ```yaml
 ---
 title: "글 제목"              # SEO title
 description: "한 줄 요약"      # meta description / OG description (인용되기 좋게)
-date: 2026-06-30             # 발행일 (ISO)
-slug: my-post                # URL 슬러그
-tags: [nextjs, seo]
-thumbnail: /og/my-post.png   # OG 이미지 (선택)
-draft: false                 # true면 빌드에서 제외
 ---
 ```
+
+novel은 `meta.yml` 에 `ep` · `status` · `panels[]` 를, `{locale}.md` frontmatter에
+`title` · `logline` · `captions[]` 를 둔다. 패널과 캡션은 순서대로 짝지어진다.
 
 작성 가이드(GEO 친화):
 - 글 첫 문단에 **자족적 요약**(이 글이 무엇을 답하는지)을 둔다.

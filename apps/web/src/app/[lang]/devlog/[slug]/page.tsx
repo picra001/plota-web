@@ -4,7 +4,12 @@ import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { isLocale, htmlLang, ogLocale, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/dictionary";
-import { getDevlogPost, getDevlogSlugs } from "@/lib/content";
+import {
+  getBreadcrumb,
+  getDevlogPost,
+  getDevlogSlugs,
+  getSiblings,
+} from "@/lib/content";
 import { site, absoluteUrl } from "@/lib/site";
 import { languageAlternates } from "@/lib/seo";
 import { ShareButtons } from "@/components/share-buttons";
@@ -63,6 +68,9 @@ export default async function DevlogPostPage({
   const post = getDevlogPost(lang, slug);
   if (!post) notFound();
 
+  const trail = getBreadcrumb("devlog", lang, post.slug);
+  const { prev, next } = getSiblings("devlog", lang, post.slug);
+
   const url = absoluteUrl(`/${lang}/devlog/${post.slug}`);
   const jsonLd = {
     "@context": "https://schema.org",
@@ -85,16 +93,26 @@ export default async function DevlogPostPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <Link
-        href={`/${lang}/devlog`}
-        className="pl-ghost inline-flex items-center gap-[7px] whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3 transition-colors"
+      <nav
+        aria-label={dict.ui.contents}
+        className="flex flex-wrap items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3"
       >
-        <span className="text-sm">←</span> {dict.ui.back}
-      </Link>
+        <Link href={`/${lang}/devlog`} className="pl-ghost transition-colors">
+          {dict.nav.devlog}
+        </Link>
+        {trail.map((folder) => (
+          <span key={folder.key} className="flex items-center gap-1.5">
+            <span aria-hidden className="text-ink-4">
+              /
+            </span>
+            <span>{folder.title}</span>
+          </span>
+        ))}
+      </nav>
 
-      <div className="mt-[34px] flex flex-wrap items-baseline gap-3.5 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3">
+      <div className="mt-[30px] flex flex-wrap items-baseline gap-3.5 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3">
         <span className="text-vermilion">{post.tag}</span>
-        <span>{post.dateLabel}</span>
+        <time dateTime={post.date}>{post.dateLabel}</time>
         <span>· {post.readingMinutes}{dict.ui.minRead}</span>
       </div>
 
@@ -105,6 +123,39 @@ export default async function DevlogPostPage({
       <div className="prose mt-10">
         <MDXRemote source={post.content} />
       </div>
+
+      {(prev || next) && (
+        <nav className="mt-14 grid gap-3 border-t border-paper-edge pt-7 sm:grid-cols-2">
+          {prev ? (
+            <Link
+              href={`/${lang}/devlog/${prev.slug}`}
+              className="pl-row block border border-paper-edge p-4 text-left"
+            >
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-3">
+                ← {dict.ui.prev}
+              </span>
+              <span className="pl-rowtitle mt-1.5 block font-sans text-[15px] font-medium leading-[1.35] text-ink transition-colors">
+                {prev.title}
+              </span>
+            </Link>
+          ) : (
+            <span />
+          )}
+          {next && (
+            <Link
+              href={`/${lang}/devlog/${next.slug}`}
+              className="pl-row block border border-paper-edge p-4 text-right sm:col-start-2"
+            >
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-3">
+                {dict.ui.next} →
+              </span>
+              <span className="pl-rowtitle mt-1.5 block font-sans text-[15px] font-medium leading-[1.35] text-ink transition-colors">
+                {next.title}
+              </span>
+            </Link>
+          )}
+        </nav>
+      )}
 
       <div className="mt-12 border-t border-paper-edge pt-7 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3">
         {dict.ui.foot}

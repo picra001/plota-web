@@ -2,8 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/lib/i18n";
-import { getDictionary } from "@/lib/dictionary";
-import { getNovelList } from "@/lib/content";
+import { getDictionary, type Dictionary } from "@/lib/dictionary";
+import {
+  getContentTree,
+  type ContentTreeFolder,
+  type ContentTreeItem,
+  type ContentTreeNode,
+} from "@/lib/content";
 import { languageAlternates } from "@/lib/seo";
 
 export async function generateMetadata({
@@ -24,39 +29,57 @@ export async function generateMetadata({
   };
 }
 
-export default async function NovelIndexPage({
-  params,
+function TreeGroup({
+  nodes,
+  depth,
+  lang,
+  dict,
 }: {
-  params: Promise<{ lang: string }>;
+  nodes: ContentTreeNode[];
+  depth: number;
+  lang: Locale;
+  dict: Dictionary;
 }) {
-  const { lang: langParam } = await params;
-  if (!isLocale(langParam)) notFound();
-  const lang = langParam as Locale;
-  const dict = getDictionary(lang);
-  const novels = getNovelList(lang);
+  const folders = nodes.filter((n): n is ContentTreeFolder => n.type === "folder");
+  const novels = nodes.filter((n): n is ContentTreeItem => n.type === "item");
 
   return (
-    <section className="mx-auto max-w-[1180px] px-[clamp(20px,5vw,64px)] pb-[120px] pt-[clamp(48px,8vh,88px)]">
-      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">
-        {dict.nov.eyebrow}
-      </span>
-      <h1 className="m-0 mt-3.5 font-sans text-[clamp(34px,5.5vw,52px)] font-medium leading-[1.06] tracking-[-0.015em]">
-        {dict.nov.title.pre}
-        <em className="font-display font-normal italic text-vermilion">
-          {dict.nov.title.accent}
-        </em>
-        {dict.nov.title.post}
-      </h1>
-      <p className="mt-[18px] max-w-[52ch] font-sans text-base leading-[1.55] text-ink-2">
-        {dict.nov.desc}
-      </p>
+    <>
+      {folders.map((folder) => (
+        <section
+          key={folder.key}
+          className={
+            depth === 0
+              ? "mt-12"
+              : "mt-9 border-l border-paper-edge pl-[clamp(14px,2.5vw,26px)]"
+          }
+        >
+          <h2 className="m-0 flex items-baseline gap-3 border-b border-paper-edge pb-3">
+            <span
+              className={
+                depth === 0
+                  ? "font-sans text-[19px] font-semibold tracking-[-0.01em] text-ink"
+                  : "font-sans text-[15px] font-semibold text-ink-2"
+              }
+            >
+              {folder.icon ? `${folder.icon} ` : ""}
+              {folder.title}
+            </span>
+            <span className="font-mono text-[10px] tracking-[0.12em] text-ink-4">
+              {folder.count}
+            </span>
+          </h2>
+          <TreeGroup
+            nodes={folder.children}
+            depth={depth + 1}
+            lang={lang}
+            dict={dict}
+          />
+        </section>
+      ))}
 
-      {novels.length === 0 ? (
-        <p className="mt-12 border border-dashed border-paper-edge p-8 text-center text-ink-3">
-          {dict.ui.empty}
-        </p>
-      ) : (
-        <div className="mt-12 grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-[clamp(20px,3vw,36px)]">
+      {novels.length > 0 && (
+        <div className="mt-7 grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-[clamp(20px,3vw,34px)]">
           {novels.map((n) => (
             <Link
               key={n.slug}
@@ -72,27 +95,65 @@ export default async function NovelIndexPage({
                   />
                 )}
                 <span className="absolute left-3 top-3 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-3">
-                  EP {n.ep}
+                  {n.badge}
                 </span>
                 <span
                   className="absolute right-3 top-3 rounded-full border px-[7px] py-0.5 font-mono text-[9px] uppercase tracking-[0.14em]"
                   style={{
                     color:
-                      n.status === "LIVE" ? "var(--vermilion)" : "var(--ink-3)",
+                      n.status === "DRAFT" ? "var(--ink-3)" : "var(--vermilion)",
                   }}
                 >
-                  {n.status === "LIVE" ? dict.ui.statusLive : dict.ui.statusDraft}
+                  {n.status === "DRAFT" ? dict.ui.statusDraft : dict.ui.statusLive}
                 </span>
               </div>
-              <h2 className="pl-covertitle m-0 mt-4 font-display text-[25px] font-normal italic leading-[1.1] text-ink transition-colors">
+              <h3 className="pl-covertitle m-0 mt-4 font-display text-[25px] font-normal italic leading-[1.1] text-ink transition-colors">
                 {n.title}
-              </h2>
+              </h3>
               <p className="mt-2 font-sans text-sm leading-[1.5] text-ink-2">
-                {n.logline}
+                {n.summary}
               </p>
             </Link>
           ))}
         </div>
+      )}
+    </>
+  );
+}
+
+export default async function NovelIndexPage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang: langParam } = await params;
+  if (!isLocale(langParam)) notFound();
+  const lang = langParam as Locale;
+  const dict = getDictionary(lang);
+  const nodes = getContentTree("novel", lang);
+
+  return (
+    <section className="mx-auto max-w-[1080px] px-[clamp(20px,5vw,64px)] pb-[120px] pt-[clamp(40px,7vh,80px)]">
+      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">
+        {dict.nov.eyebrow}
+      </span>
+      <h1 className="m-0 mt-3.5 font-sans text-[clamp(34px,5.5vw,52px)] font-medium leading-[1.06] tracking-[-0.015em]">
+        {dict.nov.title.pre}
+        <em className="font-display font-normal italic text-vermilion">
+          {dict.nov.title.accent}
+        </em>
+        {dict.nov.title.post}
+      </h1>
+      <p className="mt-[18px] max-w-[52ch] font-sans text-base leading-[1.55] text-ink-2">
+        {dict.nov.desc}
+      </p>
+
+      {nodes.length === 0 ? (
+        <p className="mt-12 border border-dashed border-paper-edge p-8 text-center text-ink-3">
+          {dict.ui.empty}
+        </p>
+      ) : (
+        <TreeGroup nodes={nodes} depth={0} lang={lang} dict={dict} />
       )}
     </section>
   );

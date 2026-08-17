@@ -20,6 +20,10 @@ export type Dictionary = {
   ui: {
     back: string;
     next: string;
+    prev: string;
+    contents: string;
+    openContents: string;
+    closeContents: string;
     minRead: string;
     foot: string;
     footer: string;
@@ -90,6 +94,10 @@ export const dictionary: Record<Locale, Dictionary> = {
     ui: {
       back: "목록으로",
       next: "다음 편",
+      prev: "이전 편",
+      contents: "목차",
+      openContents: "목차 열기",
+      closeContents: "목차 닫기",
       minRead: "분 분량",
       foot: "이 글은 5개 언어로 제공됩니다. 헤더에서 언어를 바꿔 보세요.",
       footer: "© 2026 PLOTA.AI · FROM 2D TO 3D",
@@ -155,7 +163,11 @@ export const dictionary: Record<Locale, Dictionary> = {
     },
     ui: {
       back: "Back to list",
-      next: "Next episode",
+      next: "Next",
+      prev: "Previous",
+      contents: "Contents",
+      openContents: "Open contents",
+      closeContents: "Close contents",
       minRead: " min read",
       foot: "This post is available in 5 languages. Switch from the header.",
       footer: "© 2026 PLOTA.AI · FROM 2D TO 3D",
@@ -217,7 +229,11 @@ export const dictionary: Record<Locale, Dictionary> = {
     },
     ui: {
       back: "一覧へ",
-      next: "次の話へ",
+      next: "次へ",
+      prev: "前へ",
+      contents: "目次",
+      openContents: "目次を開く",
+      closeContents: "目次を閉じる",
       minRead: "分で読了",
       foot: "この記事は5言語で読めます。ヘッダーから切り替えてください。",
       footer: "© 2026 PLOTA.AI · FROM 2D TO 3D",
@@ -274,7 +290,11 @@ export const dictionary: Record<Locale, Dictionary> = {
     },
     ui: {
       back: "返回列表",
-      next: "下一话",
+      next: "下一篇",
+      prev: "上一篇",
+      contents: "目录",
+      openContents: "打开目录",
+      closeContents: "关闭目录",
       minRead: "分钟阅读",
       foot: "本文提供五种语言版本，可在顶部切换。",
       footer: "© 2026 PLOTA.AI · FROM 2D TO 3D",
@@ -338,7 +358,11 @@ export const dictionary: Record<Locale, Dictionary> = {
     },
     ui: {
       back: "Volver a la lista",
-      next: "Siguiente episodio",
+      next: "Siguiente",
+      prev: "Anterior",
+      contents: "Índice",
+      openContents: "Abrir índice",
+      closeContents: "Cerrar índice",
       minRead: " min de lectura",
       foot: "Este texto está en 5 idiomas. Cámbialo en la cabecera.",
       footer: "© 2026 PLOTA.AI · FROM 2D TO 3D",

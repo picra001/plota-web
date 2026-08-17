@@ -1,0 +1,10 @@
+ep: "001"
+status: DRAFT
+date: 2026-08-05
+cover: cover.svg
+draft: false
+panels:
+  - image: p01.svg
+    tone: plain
+  - tone: accent
+  - tone: plain

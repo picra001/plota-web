@@ -21,6 +21,9 @@
   --vermilion-2: #a8281a;
   --vermilion-ink: #7a1e13;
 
+  /* sticky 헤더 높이 — 사이드바 sticky 오프셋 계산에 쓰인다 */
+  --header-h: 67px;
+
   --font-display: var(--font-instrument-serif), "Pretendard", ui-serif, Georgia, serif;
   --font-sans: var(--font-geist), "Pretendard", ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
@@ -126,6 +129,19 @@ img {
 }
 .pl-langopt:hover {
   background: var(--paper-3);
+}
+
+/* 노션형 콘텐츠 트리 */
+.pl-tree-row:hover {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+.pl-tree-row[aria-current="page"]:hover {
+  background: var(--paper-3);
+  color: var(--vermilion);
+}
+.pl-folder-title:hover {
+  color: var(--vermilion);
 }
 
 /* ---------------------------------------------------------------------------

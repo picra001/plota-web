@@ -6,9 +6,14 @@ import { GeistMono } from "geist/font/mono";
 import { Instrument_Serif } from "next/font/google";
 import { locales, htmlLang, ogLocale, isLocale, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/dictionary";
-import { site, siteMeta } from "@/lib/site";
+import { getDevlogList, getNovelList } from "@/lib/content";
+import { site, siteMeta, absoluteUrl } from "@/lib/site";
 import { languageAlternates } from "@/lib/seo";
 import { SiteHeader } from "@/components/site-header";
+import {
+  WebMcpContentTools,
+  type WebMcpContentItem,
+} from "@/components/webmcp-content-tools";
 
 const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
@@ -70,6 +75,24 @@ export default async function LangLayout({
   if (!isLocale(langParam)) notFound();
   const lang = langParam as Locale;
   const dict = getDictionary(lang);
+  const webMcpContent: WebMcpContentItem[] = [
+    ...getDevlogList(lang).map((post) => ({
+      type: "devlog" as const,
+      title: post.title,
+      summary: post.description,
+      url: absoluteUrl(`/${lang}/devlog/${post.slug}`),
+      date: post.date,
+      tag: post.tag,
+    })),
+    ...getNovelList(lang).map((novel) => ({
+      type: "novel" as const,
+      title: novel.title,
+      summary: novel.logline,
+      url: absoluteUrl(`/${lang}/novel/${novel.slug}`),
+      date: novel.date,
+      episode: novel.ep,
+    })),
+  ];
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -95,6 +118,7 @@ export default async function LangLayout({
         />
 
         <SiteHeader locale={lang} nav={dict.nav} />
+        <WebMcpContentTools locale={lang} items={webMcpContent} />
 
         <main className="flex-1">{children}</main>
 
