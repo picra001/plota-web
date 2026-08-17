@@ -1,19 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Instrument_Serif } from "next/font/google";
-import { locales, htmlLang, ogLocale, isLocale, type Locale } from "@/lib/i18n";
-import { getDictionary } from "@/lib/dictionary";
-import { getDevlogList, getNovelList } from "@/lib/content";
-import { site, siteMeta, absoluteUrl } from "@/lib/site";
+import { locales, htmlLang, ogLocale, isLocale } from "@/lib/i18n";
+import { site, siteMeta } from "@/lib/site";
 import { languageAlternates } from "@/lib/seo";
-import { SiteHeader } from "@/components/site-header";
-import {
-  WebMcpContentTools,
-  type WebMcpContentItem,
-} from "@/components/webmcp-content-tools";
 
 const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
@@ -64,6 +56,7 @@ export async function generateMetadata({
 
 const NO_FLASH_THEME = `(function(){try{var t=localStorage.getItem('plota-theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'paper';}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'');}catch(e){}})();`;
 
+// <html>/<body> 껍데기만 담당한다. 헤더·푸터는 (site) 그룹, 독립 화면은 (bare) 그룹.
 export default async function LangLayout({
   children,
   params,
@@ -71,38 +64,8 @@ export default async function LangLayout({
   children: React.ReactNode;
   params: Promise<{ lang: string }>;
 }) {
-  const { lang: langParam } = await params;
-  if (!isLocale(langParam)) notFound();
-  const lang = langParam as Locale;
-  const dict = getDictionary(lang);
-  const webMcpContent: WebMcpContentItem[] = [
-    ...getDevlogList(lang).map((post) => ({
-      type: "devlog" as const,
-      title: post.title,
-      summary: post.description,
-      url: absoluteUrl(`/${lang}/devlog/${post.slug}`),
-      date: post.date,
-      tag: post.tag,
-    })),
-    ...getNovelList(lang).map((novel) => ({
-      type: "novel" as const,
-      title: novel.title,
-      summary: novel.logline,
-      url: absoluteUrl(`/${lang}/novel/${novel.slug}`),
-      date: novel.date,
-      episode: novel.ep,
-    })),
-  ];
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: site.name,
-    url: site.url,
-    description: siteMeta[lang].description,
-    inLanguage: htmlLang[lang],
-    publisher: { "@type": "Organization", name: site.name, url: site.url },
-  };
+  const { lang } = await params;
+  if (!isLocale(lang)) notFound();
 
   return (
     <html
@@ -112,28 +75,7 @@ export default async function LangLayout({
     >
       <body className="flex min-h-screen flex-col">
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME }} />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-
-        <SiteHeader locale={lang} nav={dict.nav} />
-        <WebMcpContentTools locale={lang} items={webMcpContent} />
-
-        <main className="flex-1">{children}</main>
-
-        <footer className="flex flex-wrap items-center justify-between gap-5 border-t border-paper-edge px-[clamp(20px,5vw,64px)] py-10">
-          <Link
-            href={`/${lang}`}
-            className="font-sans text-base font-bold tracking-[-0.01em] text-ink"
-          >
-            PLOT<span className="text-vermilion">A</span>
-            <span className="font-mono text-[9px] tracking-normal text-ink-3">.AI</span>
-          </Link>
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-3">
-            {dict.ui.footer}
-          </div>
-        </footer>
+        {children}
       </body>
     </html>
   );

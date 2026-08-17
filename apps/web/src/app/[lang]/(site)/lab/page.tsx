@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/dictionary";
 import { languageAlternates } from "@/lib/seo";
 
-// 서비스 페이지가 준비되면 각 항목을 Link로 전환한다
-const services: { id: string; name: string }[] = [
+// path 가 있으면 링크, 없으면 준비 중 버튼으로 렌더한다
+const services: { id: string; name: string; path?: string }[] = [
+  { id: "off", name: "OFF.", path: "/lab/off" },
   { id: "generate-fbx", name: "Generate FBX" },
   { id: "image-to-mesh", name: "Image to Mesh" },
   { id: "auto-rigging", name: "Auto Rigging" },
   { id: "texture-upscale", name: "Texture Upscale" },
   { id: "sketch-cleanup", name: "Sketch Cleanup" },
-  { id: "pose-preview", name: "Pose Preview" },
 ];
 
 export async function generateMetadata({
@@ -59,21 +60,35 @@ export default async function LabPage({
       </p>
 
       <ul className="mt-12 flex max-w-[680px] list-none flex-col gap-3 p-0">
-        {services.map((s) => (
-          <li key={s.id}>
-            <button
-              type="button"
-              className="pl-btn-sec flex w-full items-center justify-between gap-5 rounded-sm border border-paper-edge bg-paper-2 px-5 py-4 text-left transition-colors"
-            >
-              <span className="font-sans text-[17px] font-medium leading-tight">
-                {s.name}
-              </span>
-              <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] opacity-70">
-                {dict.lab.soon}
-              </span>
-            </button>
-          </li>
-        ))}
+        {services.map((s) => {
+          const label = (
+            <span className="font-sans text-[17px] font-medium leading-tight">
+              {s.name}
+            </span>
+          );
+          const cls =
+            "pl-btn-sec flex w-full items-center justify-between gap-5 rounded-sm border border-paper-edge bg-paper-2 px-5 py-4 text-left transition-colors";
+
+          return (
+            <li key={s.id}>
+              {s.path ? (
+                <Link href={`/${lang}${s.path}`} className={cls}>
+                  {label}
+                  <span className="shrink-0 font-mono text-[12px] opacity-70">
+                    →
+                  </span>
+                </Link>
+              ) : (
+                <button type="button" className={cls}>
+                  {label}
+                  <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] opacity-70">
+                    {dict.lab.soon}
+                  </span>
+                </button>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
