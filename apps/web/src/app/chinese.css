@@ -1,4 +1,28 @@
 .vocabulary-app { max-width: 620px; }
+.theme-book-list { margin-top: 24px; border-top: 1px solid #d5dacf; }
+.theme-book { padding: 22px 0; border-bottom: 1px solid #d5dacf; }
+.theme-book-start { display: grid; grid-template-columns: 38px 1fr auto; gap: 14px; width: 100%; text-align: left; align-items: start; background: transparent; color: inherit; padding: 8px 0; }
+.theme-book-start:hover strong { text-decoration: underline; text-underline-offset: 4px; }
+.theme-book-start strong { font-size: 19px; font-weight: 600; }
+.theme-book-start small { display: block; font-size: 13px; color: #65725f; line-height: 1.7; margin-top: 6px; }
+.book-number, .book-size { padding-top: 4px; font-size: 12px; color: #65725f; }
+.book-preview { margin: 10px 0 14px 52px !important; font-size: 15px; color: #65725f; line-height: 1.8; }
+.book-secondary { display: flex; gap: 20px; align-items: start; margin-left: 52px; font-size: 13px; }
+.book-secondary details { flex: 1; min-width: 0; }
+.book-secondary > a { flex-shrink: 0; }
+.book-secondary summary, .vocabulary-app summary { cursor: pointer; padding: 8px 0; }
+.book-words { margin-top: 12px; }
+.book-words > div { display: grid; grid-template-columns: minmax(64px, 1fr) 1.2fr 2fr; gap: 12px; padding: 12px 0; border-top: 1px solid #e0e3d9; line-height: 1.7; font-size: 13px; overflow-wrap: anywhere; }
+.book-words strong { font-size: 17px; font-weight: 500; }
+.quiz-pinyin { display: flex; align-items: center; gap: 8px; margin: 16px 0; font-size: 13px; }
+.vocab-search { margin-block: 18px; }
+@media(max-width: 480px) {
+  .theme-book-start { grid-template-columns: 28px 1fr; gap: 10px; }
+  .book-size { grid-column: 2; padding-top: 0; }
+  .book-preview, .book-secondary { margin-left: 38px !important; }
+  .book-words > div { grid-template-columns: 1fr 1fr; }
+  .book-words > div > span:last-child { grid-column: 1 / -1; }
+}
 .vocabulary-app h1 { line-height: 1.3; }
 .deck-feature { position: relative; padding: 28px; border: 1px solid #ddd9ce; border-radius: 20px; background: #f0eee5; overflow: hidden; }
 .deck-cover { width: 98px; height: 123px; margin: 20px 0; border-radius: 4px 14px 14px 4px; border-left: 7px solid #214e41; background: #326953; color: #fcf8ed; box-shadow: 6px 7px 0 #dedbcf; display: grid; place-content: center; text-align: center; font-size: 52px; }

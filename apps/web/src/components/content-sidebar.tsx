@@ -20,7 +20,7 @@ type Props = {
   labels: SidebarLabels;
 };
 
-/** 활성 글을 감싸는 모든 폴더 키를 상위 → 하위 순서로 찾는다. */
+/** 활성 글을 감싸는 모든 폴더 키를 상위  하위 순서로 찾는다. */
 function ancestorKeys(
   nodes: ContentTreeNode[],
   slug: string,
@@ -151,14 +151,6 @@ export function ContentSidebar({
             className="pl-tree-row flex w-full items-center gap-1.5 rounded-[3px] py-[5px] pr-2.5 text-left font-sans text-[13px] font-medium leading-[1.45] text-ink transition-colors"
             style={{ paddingLeft: pad }}
           >
-            <span
-              aria-hidden
-              className="inline-block w-3 shrink-0 font-mono text-[9px] text-ink-3 transition-transform"
-              style={{ transform: expanded ? "rotate(90deg)" : "none" }}
-            >
-              ▶
-            </span>
-            {node.icon && <span aria-hidden>{node.icon}</span>}
             <span className="min-w-0 flex-1 truncate">{node.title}</span>
             <span className="shrink-0 font-mono text-[10px] tabular-nums text-ink-4">
               {node.count}
@@ -211,9 +203,6 @@ export function ContentSidebar({
           onClick={() => setDrawerOpen(true)}
           className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-2"
         >
-          <span aria-hidden className="text-[13px] leading-none">
-            ☰
-          </span>
           {labels.contents}
         </button>
       </div>
@@ -230,10 +219,10 @@ export function ContentSidebar({
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 aria-label={labels.close}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-sm text-ink-2"
+                className="inline-flex min-h-8 px-2 items-center justify-center rounded-sm text-ink-2"
               >
                 <span aria-hidden className="font-mono text-sm leading-none">
-                  ✕
+                  {labels.close}
                 </span>
               </button>
             </div>

@@ -3,7 +3,7 @@ import { getDictionary } from "@/lib/dictionary";
 import type { Locale } from "@/lib/i18n";
 import { ContentSidebar } from "./content-sidebar";
 
-/** devlog / novel 섹션 공통 셸 — 왼쪽 계층 트리 + 본문 */
+/** devlog / novel 섹션 공통 셸 - 왼쪽 계층 트리 + 본문 */
 export function ContentShell({
   lang,
   section,
@@ -17,7 +17,7 @@ export function ContentShell({
   const nodes = getContentTree(section, lang);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1500px] flex-col lg:flex-row">
+    <div className="mx-auto flex w-full max-w-[1264px] flex-col lg:flex-row">
       <ContentSidebar
         section={section}
         basePath={`/${lang}/${section}`}

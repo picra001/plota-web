@@ -104,7 +104,7 @@ export default async function NovelPostPage({
       </nav>
 
       <div className="mt-[26px] font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">
-        EP {novel.ep} · {novel.status === "LIVE" ? dict.ui.statusLive : dict.ui.statusDraft}
+        EP {novel.ep} / {novel.status === "LIVE" ? dict.ui.statusLive : dict.ui.statusDraft}
       </div>
       <h1 className="m-0 mt-2.5 font-display text-[clamp(38px,7vw,58px)] font-normal leading-[1.04]">
         {novel.title}
@@ -168,14 +168,14 @@ export default async function NovelPostPage({
               href={`/${lang}/novel/${prev.slug}`}
               className="pl-btn-sec inline-flex items-center gap-2 rounded-[3px] border-[1.5px] border-ink px-[16px] py-[10px] font-sans text-sm font-medium text-ink transition-all"
             >
-              <span className="font-mono">←</span> {dict.ui.prev}
+              <span className="font-mono"></span> {dict.ui.prev}
             </Link>
           )}
           <Link
             href={next ? `/${lang}/novel/${next.slug}` : `/${lang}/novel`}
             className="pl-btn-pri inline-flex items-center gap-2 rounded-[3px] border-[1.5px] border-transparent bg-vermilion px-[18px] py-[11px] font-sans text-sm font-medium text-[#F4EFE4] transition-all"
           >
-            {next ? dict.ui.next : dict.ui.back} <span className="font-mono">→</span>
+            {next ? dict.ui.next : dict.ui.back} <span className="font-mono"></span>
           </Link>
         </div>
       </div>

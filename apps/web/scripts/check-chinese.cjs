@@ -38,3 +38,27 @@ assert.equal(run('search_vocabulary',{query:'nonexistent-vocabulary'}).total,0);
 const context=run('get_learning_scope',{}); assert.equal(context.focusWords.length,5); assert.equal(context.supportVocabulary.wordCount,1192); assert.ok(!('progress' in context));
 assert.equal(run('list_vocabulary_decks',{}).decks[0].url,'https://example.test/data/chinese/hsk-1-4.json');
 console.log('PASS: 1,200 source entries / 1,192 headwords, all source coverage, pinyin normalization, all quiz choices, scope segmentation, selection URLs, WebMCP validation and privacy.');
+
+assert.equal(deck.themes.length,19);
+const assigned=deck.themes.flatMap(b=>b.wordIds);
+assert.equal(assigned.length,deck.wordCount);
+assert.equal(new Set(assigned).size,deck.wordCount);
+assert.deepEqual([...assigned].sort(),deck.words.map(w=>w.id).sort());
+for(const b of deck.themes){
+ assert.equal(api.resolveBook(deck,b.number).id,b.id);
+ assert.equal(api.resolveBook(deck,b.name).id,b.id);
+ const context=run('get_learning_scope',{book:b.number});
+ assert.equal(context.book.name,b.name);
+ assert.equal(context.focusWords.length,b.wordIds.length);
+ assert.deepEqual(context.focusWords.map(w=>w.id),b.wordIds);
+ assert.equal(run('get_learning_scope',{book:b.name}).book.id,b.id);
+ const parsed=api.scopeFromSearch(new URL(context.pageUrl).search);
+ assert.equal(api.focusFor(deck,parsed).length,b.wordIds.length);
+}
+assert.equal(run('get_learning_scope',{book:999}).error.code,'BOOK_NOT_FOUND');
+assert.ok(run('get_learning_scope',{book:[]}).error);
+assert.equal(run('search_vocabulary',{book:3,query:'包子'}).total,1);
+assert.equal(run('search_vocabulary',{book:3,query:'学校'}).total,0);
+assert.equal(run('check_chinese_scope',{book:3,text:'我喜欢吃包子。'}).withinVocabulary,true);
+assert.deepEqual(run('check_chinese_scope',{book:3,text:'我喜欢吃包子。'}).focusWordsUsed,['包子','吃']);
+console.log('PASS: 19 themed books cover all 1192 words once; names/numbers/URLs resolve; scoped search and conversation examples.');

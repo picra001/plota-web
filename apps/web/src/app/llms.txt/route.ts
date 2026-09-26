@@ -30,7 +30,7 @@ export function GET() {
 
 > ${siteMeta[lang].description}
 
-PLOTA is an independent studio. The hub, FBX Studio, and original webtoons use English. Lab and the Mandarin learning app use Korean. All new product content is a preview; AI generation and FBX file downloads are not available yet. SVG concept artwork can be downloaded. Learning progress stays in the browser.
+PLOTA is an independent studio. The hub, FBX Studio, and original webtoons use English. Lab and the Mandarin learning app use Korean. All new product content is a preview; AI generation and FBX file downloads are not available yet. SVG concept artwork can be downloaded. Chinese quiz scores are session-only; no learning history is persisted.
 
 ## Products
 - [FBX Studio](${absoluteUrl("/en/fbx")}): AI-assisted creation workflow preview for Roblox and OVERDARE.
@@ -41,10 +41,10 @@ PLOTA is an independent studio. The hub, FBX Studio, and original webtoons use E
 
 ## Chinese vocabulary and agent access
 - [Vocabulary JSON](${absoluteUrl("/data/chinese/hsk-1-4.json")}): One static source of truth; 1,200 source entries, 1,192 unique headwords. Includes pinyin, Korean senses, source page references and source hashes.
-- [Conversation scope](${absoluteUrl("/ko/chinese/conversation")}): Query parameters deck=hsk-1-4, level=0..4 (0 means all), offset=0-based, count=1..20. Focus words are the selected level's ordered slice. Support vocabulary is the entire selected deck.
+- [Conversation scope](${absoluteUrl("/ko/chinese/conversation")}): Select one of 19 theme books with ?deck=hsk-1-4&book=hsk-theme-03. Book number or Korean name also works. All words in that book are focus words; the entire HSK dataset supplies support vocabulary.
 - [Agent protocol](${absoluteUrl("/data/chinese/agent-guide.md")}): Tool contract and fallback instructions.
 - Browser WebMCP tools: list_vocabulary_decks, get_learning_scope, search_vocabulary, check_chinese_scope. Read-only public content; no private history.
-- Read the active scope before tutoring. Use focus words and easier support words from this deck only. Explain in Korean, one question per turn. Check Chinese examples; rewrite unknown words or ask the learner before extending scope.
+- Call list_vocabulary_decks for names and numbers, then get_learning_scope({book: 3}) or get_learning_scope({book: "음식과 식사"}). Vary sentence patterns, tense, questions, negation, comparison and situations freely without a fixed script. Read the active scope before tutoring. Use focus words and easier support words from this deck only. Explain in Korean, one question per turn. Check Chinese examples; rewrite unknown words or ask the learner before extending scope.
 - A static website URL is not a ChatGPT remote MCP server endpoint. Without browser WebMCP use the JSON and copied prompt. Do not claim access or validation if unavailable.
 
 ## Devlog (개발 로그)

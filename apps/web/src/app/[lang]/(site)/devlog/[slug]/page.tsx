@@ -132,7 +132,7 @@ export default async function DevlogPostPage({
               className="pl-row block border border-paper-edge p-4 text-left"
             >
               <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-3">
-                ← {dict.ui.prev}
+                 {dict.ui.prev}
               </span>
               <span className="pl-rowtitle mt-1.5 block font-sans text-[15px] font-medium leading-[1.35] text-ink transition-colors">
                 {prev.title}
@@ -147,7 +147,7 @@ export default async function DevlogPostPage({
               className="pl-row block border border-paper-edge p-4 text-right sm:col-start-2"
             >
               <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-3">
-                {dict.ui.next} →
+                {dict.ui.next}
               </span>
               <span className="pl-rowtitle mt-1.5 block font-sans text-[15px] font-medium leading-[1.35] text-ink transition-colors">
                 {next.title}

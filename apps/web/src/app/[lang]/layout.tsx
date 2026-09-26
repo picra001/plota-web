@@ -29,7 +29,7 @@ export async function generateMetadata({
   const meta = siteMeta[lang];
 
   return {
-    title: { default: meta.title, template: `%s · ${site.name}` },
+    title: { default: meta.title, template: `%s / ${site.name}` },
     description: meta.description,
     alternates: {
       canonical: `/${lang}`,

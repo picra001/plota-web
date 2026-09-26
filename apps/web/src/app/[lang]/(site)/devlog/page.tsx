@@ -62,7 +62,7 @@ function TreeGroup({
                   : "font-sans text-[15px] font-semibold text-ink-2"
               }
             >
-              {folder.icon ? `${folder.icon} ` : ""}
+
               {folder.title}
             </span>
             <span className="font-mono text-[10px] tracking-[0.12em] text-ink-4">
@@ -90,7 +90,7 @@ function TreeGroup({
                 <span className="text-vermilion">{p.badge}</span>
                 <time dateTime={p.date}>{p.dateLabel}</time>
                 <span>
-                  · {p.readingMinutes}
+                  / {p.readingMinutes}
                   {dict.ui.minRead}
                 </span>
               </div>
@@ -99,7 +99,7 @@ function TreeGroup({
                   {p.title}
                 </h3>
                 <span className="pl-arrow font-mono text-base text-vermilion opacity-0 transition-all">
-                  →
+
                 </span>
               </div>
               <p className="mt-2 max-w-[62ch] font-sans text-[15px] leading-[1.55] text-ink-2">
@@ -131,7 +131,7 @@ export default async function DevlogIndexPage({
       </span>
       <h1 className="m-0 mt-3.5 font-sans text-[clamp(34px,5.5vw,52px)] font-medium leading-[1.06] tracking-[-0.015em]">
         {dict.dev.title.pre}
-        <span className="font-display font-normal text-vermilion">
+        <span className="heading-word">
           {dict.dev.title.accent}
         </span>
         {dict.dev.title.post}

@@ -42,3 +42,7 @@ target=Path(__file__).resolve().parents[1]/'public/data/chinese/hsk-1-4.json'
 target.parent.mkdir(parents=True,exist_ok=True)
 target.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
 print(f'{len(rows)} source senses, {len(scan)} indexed entries, {len(words)} unique headwords -> {target}')
+
+# Reapply reviewed themes whenever the source vocabulary is regenerated.
+import runpy
+runpy.run_path(str(Path(__file__).with_name("group-hsk.py")), run_name="__main__")

@@ -1,44 +1,48 @@
 "use client";
-
-import Link from "next/link";
+import Link from "./localized-link";
 import { useEffect, useState } from "react";
-import { checkScope, choicesFor, conversationContext, conversationPrompt, decks, defaultScope, focusFor, gloss, poolFor, readings, runVocabularyTool, scopeFromSearch, scopeQuery, shuffled, vocabularyToolSpecs, type Deck, type Scope, type Word } from "@/lib/chinese-vocabulary";
+import { bookWords, checkScope, choicesFor, conversationContext, conversationPrompt, decks, defaultScope, focusFor, gloss, readings, resolveBook, runVocabularyTool, scopeFromSearch, scopeQuery, shuffled, vocabularyToolSpecs, type Deck, type Scope, type ThemeBook, type Word } from "@/lib/chinese-vocabulary";
 
-type Progress = { saved: string[]; wrong: string[]; learned: string[]; pinyin: boolean };
-const empty: Progress = { saved: [], wrong: [], learned: [], pinyin: true };
-const progressKey = (id: string) => `plota-chinese-v2:${id}`;
-function readProgress(id: string, deck: Deck): Progress {
-  try { const p = JSON.parse(localStorage.getItem(progressKey(id)) ?? "null"); if (!p) return empty; const valid = new Set(deck.words.map(w => w.id)); const ids = (v: unknown) => Array.isArray(v) ? [...new Set(v.filter((x): x is string => typeof x === "string" && valid.has(x)))] : []; return { saved: ids(p.saved), wrong: ids(p.wrong), learned: ids(p.learned), pinyin: p.pinyin !== false }; } catch { return empty; }
+type Quiz = { words: Word[]; index: number; choices: string[]; answer: string | null; score: number; finished: boolean };
+function newQuiz(words: Word[], deck: Deck): Quiz {
+  const ordered = shuffled(words);
+  return { words: ordered, index: 0, choices: choicesFor(ordered[0], deck), answer: null, score: 0, finished: false };
 }
-function download(value: unknown, filename: string) { const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json;charset=utf-8" })); const a = document.createElement("a"); a.href = url; a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
-
+function download(value: unknown, filename: string) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json;charset=utf-8" }));
+  const a = document.createElement("a"); a.href = url; a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 export function ChineseApp({ screen }: { screen: string }) {
   const [scope, setScope] = useState<Scope>(defaultScope);
   const [hydrated, setHydrated] = useState(false);
   const [deck, setDeck] = useState<Deck | null>(null);
   const [loadError, setLoadError] = useState(false);
-  const [progress, setProgress] = useState<Progress>(empty);
   const [notice, setNotice] = useState("");
   const [mcp, setMcp] = useState(false);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
-  const [questions, setQuestions] = useState<Word[]>([]);
-  const [index, setIndex] = useState(0);
-  const [options, setOptions] = useState<string[]>([]);
-  const [answer, setAnswer] = useState<string | null>(null);
-  const [score, setScore] = useState(0);
-  const [finished, setFinished] = useState(false);
-  const [reset, setReset] = useState(false);
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [pinyin, setPinyin] = useState(true);
   const [example, setExample] = useState("");
   const [check, setCheck] = useState<ReturnType<typeof checkScope> | null>(null);
-  useEffect(() => { const sync = () => setScope(scopeFromSearch(location.search)); sync(); setHydrated(true); addEventListener("popstate", sync); return () => removeEventListener("popstate", sync); }, []);
+  useEffect(() => {
+    const sync = () => setScope(scopeFromSearch(location.search)); sync(); setHydrated(true);
+    addEventListener("popstate", sync); return () => removeEventListener("popstate", sync);
+  }, []);
   useEffect(() => {
     if (!hydrated) return;
     const controller = new AbortController(); setDeck(null); setLoadError(false);
     const info = decks.find(d => d.id === scope.deckId)!;
-    fetch(info.url, { signal: controller.signal }).then(r => { if (!r.ok) throw Error("deck"); return r.json(); }).then((d: Deck) => { if (d.id !== info.id || d.schemaVersion !== 1 || d.words.length !== d.wordCount) throw Error("schema"); setProgress(readProgress(d.id, d)); setDeck(d); }).catch(() => { if (!controller.signal.aborted) setLoadError(true); });
+    fetch(info.url, { signal: controller.signal }).then(r => { if (!r.ok) throw Error("deck"); return r.json(); }).then((d: Deck) => {
+      if (d.id !== info.id || d.schemaVersion !== 1 || d.words.length !== d.wordCount || !d.themes?.length) throw Error("schema"); setDeck(d);
+    }).catch(() => { if (!controller.signal.aborted) setLoadError(true); });
     return () => controller.abort();
   }, [scope.deckId, hydrated]);
+  useEffect(() => {
+    if (screen !== "learn" || !deck) return;
+    const b = scope.book ? resolveBook(deck, scope.book) : undefined;
+    setQuiz(b ? newQuiz(bookWords(deck, b), deck) : null);
+  }, [deck, scope.book, screen]);
   useEffect(() => {
     if (!deck) return;
     const context = (document as Document & { modelContext?: { registerTool: (tool: unknown, options: { signal: AbortSignal }) => void | Promise<void> } }).modelContext;
@@ -48,29 +52,59 @@ export function ChineseApp({ screen }: { screen: string }) {
     return () => controller.abort();
   }, [deck, scope]);
   useEffect(() => () => { if ("speechSynthesis" in window) speechSynthesis.cancel(); }, []);
-  function updateScope(patch: Partial<Scope>) { const next = { ...scope, ...patch }; setScope(next); setPage(0); setCheck(null); history.replaceState(null, "", `${location.pathname}?${scopeQuery(next)}`); }
-  function save(next: Progress) { setProgress(next); try { localStorage.setItem(progressKey(scope.deckId), JSON.stringify(next)); } catch { setNotice("저장이 제한되어 이번 방문 동안만 기록됩니다."); } }
-  function toggleSaved(id: string) { save({ ...progress, saved: progress.saved.includes(id) ? progress.saved.filter(x => x !== id) : [...progress.saved, id] }); }
-  function speak(text: string) { if (!("speechSynthesis" in window)) { setNotice("이 브라우저는 음성 읽기를 지원하지 않습니다."); return; } speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "zh-CN"; u.rate = 0.8; u.onerror = () => setNotice("기기의 중국어 음성 설정을 확인해주세요."); speechSynthesis.speak(u); }
-  async function copy(text: string) { try { await navigator.clipboard.writeText(text); setNotice("복사했어요. 원하는 AI 대화에 붙여넣으세요."); } catch { setNotice("자동 복사가 제한됩니다. 아래 요청문을 선택해서 복사해주세요."); } }
-  function start(words: Word[]) { const batch = shuffled(words).slice(0, scope.count); if (!batch.length || !deck) return; setQuestions(batch); setIndex(0); setOptions(choicesFor(batch[0], deck)); setScore(0); setAnswer(null); setFinished(false); }
-  function choose(choice: string) { if (answer !== null || !deck) return; const w = questions[index]; const correct = choice === gloss(w); setAnswer(choice); if (correct) setScore(s => s + 1); save({ ...progress, learned: correct ? [...new Set([...progress.learned, w.id])] : progress.learned, wrong: correct ? progress.wrong.filter(id => id !== w.id) : [...new Set([...progress.wrong, w.id])] }); }
-  const pool = deck ? poolFor(deck, scope) : [];
+  function selectBook(b?: ThemeBook) {
+    const next = { ...defaultScope, deckId: scope.deckId, ...(b ? { book: b.id } : {}) };
+    setScope(next); setPage(0); setCheck(null); setExample("");
+    history.replaceState(null, "", `${location.pathname}?${scopeQuery(next)}`);
+  }
+  function speak(text: string) {
+    if (!("speechSynthesis" in window)) { setNotice("이 브라우저는 음성 읽기를 지원하지 않습니다."); return; }
+    speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "zh-CN"; u.rate = 0.8;
+    u.onerror = () => setNotice("기기의 중국어 음성 설정을 확인해주세요."); speechSynthesis.speak(u);
+  }
+  async function copy(text: string) {
+    try { await navigator.clipboard.writeText(text); setNotice("복사했습니다."); } catch { setNotice("자동 복사가 제한됩니다. 요청문을 선택해서 복사해주세요."); }
+  }
+  function choose(answer: string) { setQuiz(q => !q || q.answer !== null ? q : { ...q, answer, score: q.score + (answer === gloss(q.words[q.index]) ? 1 : 0) }); }
+  function nextQuestion() {
+    if (!deck) return;
+    setQuiz(q => !q || q.answer === null ? q : q.index + 1 === q.words.length ? { ...q, finished: true } : { ...q, index: q.index + 1, choices: choicesFor(q.words[q.index + 1], deck), answer: null });
+  }
+  const book = deck && scope.book ? resolveBook(deck, scope.book) : undefined;
   const focus = deck ? focusFor(deck, scope) : [];
-  const word = questions[index];
-  const q = query.trim().toLowerCase();
-  const filtered = pool.filter(w => `${w.hanzi} ${readings(w)} ${gloss(w)}`.toLowerCase().includes(q));
-  const review = deck?.words.filter(w => progress.saved.includes(w.id) || progress.wrong.includes(w.id)) ?? [];
+  const question = quiz?.words[quiz.index];
   const prompt = deck && hydrated ? conversationPrompt(deck, scope, location.origin) : "";
-  const selector = <div className="vocab-selector"><label>단어장<select aria-label="단어장" value={scope.deckId} onChange={e => updateScope({ deckId: e.target.value, offset: 0 })}>{decks.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}</select></label><div className="vocab-select-row"><label>학습 범위<select aria-label="학습 범위" value={scope.level} onChange={e => updateScope({ level: Number(e.target.value), offset: 0 })}><option value={0}>1–4급 전체</option>{[1,2,3,4].map(n => <option key={n} value={n}>{n}급 수록 어휘</option>)}</select></label><label>한 번에<select aria-label="한 번에" value={scope.count} onChange={e => updateScope({ count: Number(e.target.value) })}>{[5,10,20].map(n => <option key={n} value={n}>{n}개</option>)}{![5,10,20].includes(scope.count) && <option value={scope.count}>{scope.count}개</option>}</select></label></div></div>;
-  function wordCard(w: Word) { return <article className="vocab-word" key={w.id}><div><strong lang="zh-Hans">{w.hanzi}</strong><span className="mini-tag">{w.levels.join("·")}급</span></div><p className="pinyin">{readings(w)}</p><p>{gloss(w)}</p><div className="vocab-actions"><button onClick={() => speak(w.hanzi)}>발음 듣기 ♫</button><button aria-pressed={progress.saved.includes(w.id)} onClick={() => toggleSaved(w.id)}>{progress.saved.includes(w.id) ? "✓ 저장됨" : "+ 복습 저장"}</button></div><details><summary>원본 발음·뜻과 출처</summary>{w.senses.map((s, i) => <p key={i}>{s.pinyin} · {s.meaningKo}</p>)}{w.sources.map((s, i) => <small key={i}>{s.source} · PDF {s.page}쪽 · 항목 {s.number}<br /></small>)}</details></article>; }
-  return <div className="learning-app vocabulary-app"><div className="learning-topline"><span>작게, 매일. 중국어 한 걸음</span><span className="mini-tag">HSK 단어 · 회화</span></div>{notice && <p role="status" className="notice">{notice}</p>}
-    {!screen && <><div className="learning-greeting"><p className="eyebrow">WORDS FIRST, CONVERSATION NEXT</p><h1>아는 단어로,<br /><em>말문이 트이도록.</em></h1><p>단어를 익히고, 그 범위 안에서 대화하세요.</p></div><div className="deck-feature"><span className="eyebrow">YOUR FIRST WORD BOOK</span><div className="deck-cover" aria-hidden="true">词<span>HSK 1—4</span></div><h2>HSK 1–4급 통합 단어장</h2><p>세 PDF의 1,200개 항목을 모았습니다.<br />중복을 합친 1,192개 표제어, 다양한 발음과 뜻.</p><Link className="button primary wide" href="/ko/chinese/learn">단어장 선택하고 퀴즈 시작 →</Link><Link className="text-link" href="/ko/chinese/conversation">이 단어들로 AI 회화하기 ↗</Link></div><div className="learning-stats"><div><strong>{deck ? progress.learned.length : "—"}</strong><span>맞힌 단어</span></div><div><strong>{deck ? progress.wrong.length : "—"}</strong><span>다시 볼 단어</span></div><div><strong>1,192</strong><span>수록 표제어</span></div></div><Link className="lesson-row" href="/ko/chinese/vocabulary"><span className="lesson-icon">词</span><div><h3>단어장 펼쳐보기</h3><p>중국어 · 병음 · 한국어 · PDF 출처</p></div><span>↗</span></Link><p className="small-note">제공된 기존 HSK 자료 기준입니다. 최신 시험 체계의 공식 목록을 뜻하지 않습니다. 학습 기록은 이 브라우저에만 저장돼요.</p></>}
-    {screen && !deck && <div className="empty-state" role="status"><h1>{{ learn: "단어장 선택 퀴즈", review: "저장한 단어 복습", vocabulary: "HSK 단어 사전", conversation: "단어 범위로 AI 회화하기", settings: "학습 설정" }[screen] ?? "한마디 중국어"}</h1><a className="text-link" href="/data/chinese/hsk-1-4.json">HSK 1–4급 전체 단어장 JSON</a>{loadError ? <><p>단어장을 불러오지 못했어요.</p><button className="button outline" onClick={() => location.reload()}>다시 불러오기</button></> : <p>단어장을 펼치는 중…</p>}</div>}
-    {deck && screen === "learn" && (questions.length === 0 ? <><p className="eyebrow">CHOOSE YOUR WORD BOOK</p><h1>오늘은 어떤 단어를<br /><em>익혀볼까요?</em></h1>{selector}<div className="scope-summary"><strong>{pool.length.toLocaleString()}개 표제어</strong><p>선택한 범위에서 무작위로 최대 {scope.count}문제.<br />중국어를 보고 한국어 뜻을 고르세요.</p></div><button className="button primary wide" onClick={() => start(pool)}>퀴즈 시작 →</button><Link className="text-link" href={`/ko/chinese/vocabulary?${scopeQuery(scope)}`}>시작 전에 단어 둘러보기</Link></> : finished ? <div className="lesson-complete"><div className="completion-stamp">好</div><h1>오늘도 한 걸음!</h1><p className="quiz-score">{score} <span>/ {questions.length}</span></p><p>틀린 단어는 복습 목록에 담았어요.</p><Link className="button primary wide" href={`/ko/chinese/review?${scopeQuery(scope)}`}>틀린 단어 다시 보기 →</Link><button className="button outline wide" onClick={() => setQuestions([])}>단어장 다시 선택</button><Link className="text-link" href={`/ko/chinese/conversation?${scopeQuery(scope)}`}>이제 회화 연습하기 ↗</Link></div> : <><div className="lesson-heading"><button onClick={() => setQuestions([])}>← 범위 선택</button><span>{index + 1} / {questions.length}</span></div><progress aria-label="퀴즈 진행" value={index + (answer !== null ? 1 : 0)} max={questions.length} /><h1 className="lesson-title">어떤 뜻일까요?</h1><div className="quiz-card"><button className="sound-button" onClick={() => speak(word.hanzi)}>발음 듣기 ♫</button><div className="hanzi" lang="zh-Hans">{word.hanzi}</div>{progress.pinyin && <p className="pinyin">{readings(word)}</p>}</div><div className="answer-options">{options.map((o, i) => <button key={o} disabled={answer !== null} className={answer !== null && o === gloss(word) ? "correct" : answer === o ? "incorrect" : ""} onClick={() => choose(o)}><span>0{i + 1}</span>{o}</button>)}</div><div className="answer-feedback" aria-live="polite">{answer !== null && <><strong>{answer === gloss(word) ? "맞아요!" : "다시 익혀볼까요?"}</strong><p>{gloss(word)}</p></>}</div><button className="button primary wide" disabled={answer === null} onClick={() => { if (index + 1 === questions.length) setFinished(true); else { setIndex(index + 1); setOptions(choicesFor(questions[index + 1], deck)); setAnswer(null); } }}>{index + 1 === questions.length ? "결과 보기" : "다음 단어"} →</button><button className="save-phrase" onClick={() => toggleSaved(word.id)}>{progress.saved.includes(word.id) ? "✓ 복습에 저장됨 · 해제" : "+ 이 단어 복습에 저장"}</button></>)}
-    {deck && screen === "vocabulary" && <><p className="eyebrow">A WORD AT A TIME</p><h1>나의 단어 사전.</h1>{selector}<label className="vocab-search">단어 검색<input placeholder="중국어, 병음 또는 한국어" value={query} onChange={e => { setQuery(e.target.value); setPage(0); }} /></label><p className="muted" aria-live="polite">{filtered.length}개 표제어 · {page + 1} / {Math.max(1, Math.ceil(filtered.length / 20))}쪽</p>{filtered.slice(page * 20, (page + 1) * 20).map(wordCard)}{!filtered.length && <p className="empty-state">다른 검색어로 찾아보세요.</p>}<div className="vocab-actions"><button disabled={page === 0} onClick={() => setPage(page - 1)}>← 이전</button><button disabled={(page + 1) * 20 >= filtered.length} onClick={() => setPage(page + 1)}>다음 →</button></div><a className="text-link" href={decks.find(d => d.id === deck.id)!.url} download>전체 단어장 JSON 내려받기 ↓</a></>}
-    {deck && screen === "review" && <><p className="eyebrow">MAKE IT STICK</p><h1>다시 만나면,<br /><em>더 오래 기억해요.</em></h1><p className="muted">저장하거나 틀린 단어 {review.length}개</p>{review.length > 0 && <button className="button primary wide" onClick={() => { download({ deckId: deck.id, words: review }, "review-words.json"); setNotice("복습 단어를 내려받았어요."); }}>복습 단어 내려받기 ↓</button>}{review.slice(page * 20, (page + 1) * 20).map(w => <div key={w.id}>{wordCard(w)}{progress.wrong.includes(w.id) && <button className="text-link" onClick={() => save({ ...progress, wrong: progress.wrong.filter(id => id !== w.id) })}>익혔어요 · 오답 목록에서 해제</button>}</div>)}{review.length > 20 && <div className="vocab-actions"><button disabled={page === 0} onClick={() => setPage(page - 1)}>← 이전</button><button disabled={(page + 1) * 20 >= review.length} onClick={() => setPage(page + 1)}>다음 →</button></div>}{!review.length && <div className="empty-state"><p>퀴즈에서 틀리거나 저장한 단어가 여기 모여요.</p><Link className="button primary" href="/ko/chinese/learn">단어 퀴즈 시작 →</Link></div>}</>}
-    {deck && screen === "conversation" && <><p className="eyebrow">YOUR WORDS, YOUR CONVERSATION</p><h1>배운 단어 안에서,<br /><em>대화를 이어가요.</em></h1><p className="muted">오늘의 집중 단어를 고르세요. 쉬운 보조 어휘는 같은 단어장 안에서만 사용하도록 AI에게 전달합니다.</p>{selector}<label className="vocab-search">시작 위치 (총 {pool.length}개)<input aria-label="시작 위치" type="number" min={1} max={pool.length} value={Math.min(scope.offset, Math.max(0,pool.length - 1)) + 1} onChange={e => updateScope({ offset: Math.max(0, Math.min(pool.length - 1, Number(e.target.value) - 1)) })} /></label><div className="focus-words">{focus.map(w => <span key={w.id} title={gloss(w)} lang="zh-Hans">{w.hanzi}</span>)}</div><div className="mcp-status"><span className={mcp ? "status-dot connected" : "status-dot"} /><strong>{mcp ? "WebMCP 도구 준비됨" : "요청문으로 회화 시작"}</strong><p>{mcp ? "지원 에이전트가 현재 범위 조회 · 단어 검색 · 예문 범위 검사를 사용할 수 있어요." : "WebMCP 지원 브라우저·에이전트에서는 이 페이지의 도구가 연결됩니다. 지금은 요청문과 단어장 파일을 사용하세요."}</p></div><div className="vocab-button-stack"><button className="button primary wide" onClick={() => void copy(prompt)}>AI 회화 요청문 복사 ↗</button><button className="button outline wide" onClick={() => void copy(conversationContext(deck, scope, location.origin).pageUrl)}>이 단어 범위 링크 복사</button><button className="text-link" onClick={() => download(conversationContext(deck, scope, location.origin), "chinese-conversation-scope.json")}>선택 범위 JSON 내려받기 ↓</button><a className="text-link" href={decks.find(d => d.id === deck.id)!.url} download>전체 단어장 JSON 내려받기 ↓</a></div><details className="conversation-prompt"><summary>AI에게 전달할 요청문 보기</summary><textarea aria-label="AI 회화 요청문" readOnly value={prompt} rows={12} /></details><div className="scope-checker"><h2>예문이 범위 안에 있나요?</h2><p>AI가 만든 중국어를 붙여넣어 어휘를 확인하세요.</p><textarea aria-label="범위 검사할 중국어" placeholder="我喜欢学习中文。" value={example} maxLength={2000} onChange={e => { setExample(e.target.value); setCheck(null); }} /><button className="button outline" disabled={!example.trim()} onClick={() => setCheck(checkScope(example, deck))}>단어 범위 검사</button>{check && <p role="status">{check.withinVocabulary ? "단어장 어휘로 분리할 수 있어요." : `단어장에서 확인되지 않은 글자: ${check.unknownHanzi.join(" · ")}`}</p>}<p className="small-note">어휘 분리 검사입니다. 단어를 조합해 만든 새로운 의미나 문법·난이도까지 보장하지는 않아요.</p></div><div className="connection-note"><h3>ChatGPT에서 사용하려면</h3><p>요청문을 붙여넣고, 링크를 읽지 못하면 전체 단어장 JSON도 첨부하세요. 이 정적 페이지 주소 자체가 ChatGPT 앱용 MCP 서버 주소는 아닙니다. 앱 커넥터 연결에는 별도 MCP 서버가 필요합니다.</p><p>이 사이트에서 AI 모델을 직접 실행하거나 대화를 서버로 보내지 않습니다. WebMCP 도구는 공개 단어와 직접 선택한 범위만 제공하며 개인 학습 기록은 읽지 않아요.</p></div></>}
-    {deck && screen === "settings" && <><p className="eyebrow">MAKE YOURSELF AT HOME</p><h1>나에게 맞게.</h1><div className="settings-card"><label><span><strong>병음 함께 보기</strong><small>퀴즈 카드에 발음을 표시해요.</small></span><input type="checkbox" checked={progress.pinyin} onChange={e => save({ ...progress, pinyin: e.target.checked })} /></label><div><strong>학습 기록</strong><p>이 브라우저에 단어장별로 저장됩니다.<br />계정이나 기기 간 동기화는 사용하지 않아요.</p></div><div><strong>내 단어장</strong><p>{deck.title} · {deck.wordCount}개 표제어</p><Link className="text-link" href="/ko/chinese/vocabulary">전체 단어와 출처 보기 ↗</Link></div><div><strong>회화 도우미</strong><p>현재 범위와 공개 단어만 AI 도구로 제공합니다.</p><Link className="text-link" href="/ko/chinese/conversation">회화 범위 설정 ↗</Link></div></div>{reset ? <div className="notice"><p>이 단어장의 학습·저장·오답 기록을 지울까요?</p><button className="button outline" onClick={() => { save(empty); setReset(false); setNotice("이 단어장의 기록을 초기화했어요."); }}>기록 지우기</button><button className="text-link" onClick={() => setReset(false)}>취소</button></div> : <button className="text-link" onClick={() => setReset(true)}>이 단어장 기록 초기화</button>}</>}
+  const normalize = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+  const matches = (s: string) => normalize(s).includes(normalize(query.trim()));
+  const filteredBooks = deck?.themes.filter(b => matches(`${b.number} ${b.name} ${b.description} ${bookWords(deck,b).map(w=>`${w.hanzi} ${gloss(w)}`).join(" ")}`)) ?? [];
+  const dictionary = (book ? focus : deck?.words ?? []).filter(w => matches(`${w.hanzi} ${readings(w)} ${gloss(w)}`));
+  const bookSelector = deck && <label className="vocab-search">단어장<select aria-label="회화 단어장" value={book?.id ?? ""} onChange={e => selectBook(resolveBook(deck,e.target.value))}><option value="">단어장 선택</option>{deck.themes.map(b => <option key={b.id} value={b.id}>{String(b.number).padStart(2,"0")}. {b.name} ({b.wordIds.length}개)</option>)}</select></label>;
+  const wordsTable = (words: Word[]) => <div className="book-words">{words.map(w => <div key={w.id}><strong lang="zh-Hans">{w.hanzi}</strong><span>{readings(w)}</span><span>{gloss(w)}</span></div>)}</div>;
+
+  return <div className={`learning-app vocabulary-app${screen === "learn" && quiz && !quiz.finished ? " quiz-active" : ""}`}>
+    {notice && <p role="status" className="notice">{notice}</p>}
+    {!screen && <><h1>중국어 학습</h1><div className="deck-feature"><h2>HSK 1–4급 단어장</h2><p>1,192개 단어를 생활 주제로 나눴습니다. 단어장별로 퀴즈를 풀거나 AI와 회화 연습을 할 수 있습니다.</p><Link className="button primary wide" href="/ko/chinese/learn">단어장 선택하고 퀴즈 시작</Link><Link className="text-link" href="/ko/chinese/conversation">단어장으로 AI 회화하기</Link></div><Link className="text-link" href="/ko/chinese/vocabulary">전체 단어 사전</Link><p className="small-note">점수는 이번 퀴즈에서만 표시하며 학습 이력은 저장하지 않습니다. 제공된 기존 HSK 자료 기준입니다.</p></>}
+    {screen && !deck && <div className="empty-state" role="status"><h1>{screen === "conversation" ? "AI 회화" : "HSK 단어장"}</h1>{loadError ? <><p>단어장을 불러오지 못했습니다.</p><button className="button outline" onClick={() => location.reload()}>다시 불러오기</button></> : <p>단어장을 불러오는 중입니다.</p>}</div>}
+    {deck && scope.book && !book && <p role="alert" className="notice">해당 단어장을 찾을 수 없습니다. <button onClick={() => selectBook()}>목록 보기</button></p>}
+    {deck && screen === "learn" && (!quiz ? <>
+      <h1>단어장 목록</h1><p className="muted">{deck.themes.length}개 테마 / {deck.wordCount.toLocaleString()}개 단어</p>
+      <label className="vocab-search">단어장 찾기<input value={query} onChange={e => setQuery(e.target.value)} placeholder="단어장 이름, 번호 또는 단어" /></label>
+      <div className="theme-book-list">{filteredBooks.map(b => <article className="theme-book" key={b.id}>
+        <button className="theme-book-start" onClick={() => selectBook(b)} aria-label={`${b.number}번 ${b.name} 퀴즈 시작`}><span className="book-number">{String(b.number).padStart(2,"0")}</span><span><strong>{b.name}</strong><small>{b.description}</small></span><span className="book-size">{b.wordIds.length}문제</span></button>
+        <p className="book-preview" lang="zh-Hans">{bookWords(deck,b).slice(0,8).map(w=>w.hanzi).join(" / ")}</p>
+        <div className="book-secondary"><details><summary>포함 단어 {b.wordIds.length}개 보기</summary>{wordsTable(bookWords(deck,b))}</details><Link className="text-link" href={`/ko/chinese/conversation?${scopeQuery({...defaultScope,book:b.id})}`}>AI 회화</Link></div>
+      </article>)}</div>{!filteredBooks.length && <p className="empty-state">검색 결과가 없습니다.</p>}
+    </> : quiz.finished ? <div className="lesson-complete"><h1>퀴즈 결과</h1><p>{book?.number}번 {book?.name}</p><p className="quiz-score">{quiz.score}<span> / {quiz.words.length}</span></p><p>정답률 {Math.round(quiz.score / quiz.words.length * 100)}%</p><button className="button primary wide" onClick={() => setQuiz(newQuiz(quiz.words,deck))}>같은 단어장 다시 풀기</button><button className="button outline wide" onClick={() => selectBook()}>단어장 목록</button><Link className="text-link" href={`/ko/chinese/conversation?${scopeQuery(scope)}`}>이 단어장으로 AI 회화하기</Link></div> : question && <>
+      <div className="quiz-mode-heading"><strong>{book?.number}번 {book?.name}</strong><button className="quiz-exit" aria-label="퀴즈 종료하고 단어장 목록으로" title="퀴즈 종료" onClick={() => selectBook()}>x</button></div><div className="quiz-progress-label">{quiz.index + 1} / {quiz.words.length}</div><progress aria-label="퀴즈 진행" value={quiz.index + (quiz.answer !== null ? 1 : 0)} max={quiz.words.length} /><h1 className="lesson-title">어떤 뜻일까요?</h1>
+      <div className="quiz-card"><button className="sound-button" onClick={() => speak(question.hanzi)}>발음 듣기</button><div className="hanzi" lang="zh-Hans">{question.hanzi}</div>{pinyin && <p className="pinyin">{readings(question)}</p>}</div><label className="quiz-pinyin"><input type="checkbox" checked={pinyin} onChange={e=>setPinyin(e.target.checked)} />병음 보기</label>
+      <div className="answer-options">{quiz.choices.map((o,i)=><button key={o} disabled={quiz.answer !== null} className={quiz.answer !== null && o === gloss(question) ? "correct" : quiz.answer === o ? "incorrect" : ""} onClick={()=>choose(o)}><span>{i+1}</span>{o}</button>)}</div><div className="answer-feedback" aria-live="polite">{quiz.answer !== null && <><strong>{quiz.answer === gloss(question) ? "정답입니다." : "정답을 확인해주세요."}</strong><p>{gloss(question)}</p></>}</div><button className="button primary wide" disabled={quiz.answer === null} onClick={nextQuestion}>{quiz.index + 1 === quiz.words.length ? "결과 보기" : "다음 단어"}</button>
+    </>)}
+    {deck && screen === "vocabulary" && <><h1>단어 사전</h1>{bookSelector}<label className="vocab-search">단어 검색<input value={query} onChange={e=>{setQuery(e.target.value);setPage(0);}} placeholder="중국어, 병음 또는 한국어" /></label><p className="muted">{dictionary.length}개 단어</p>{dictionary.slice(page*20,(page+1)*20).map(w=><article className="vocab-word" key={w.id}><strong lang="zh-Hans">{w.hanzi}</strong><p className="pinyin">{readings(w)}</p><p>{gloss(w)}</p><button className="text-link" onClick={()=>speak(w.hanzi)}>발음 듣기</button><details><summary>원본 발음과 출처</summary>{w.senses.map((s,i)=><p key={i}>{s.pinyin} / {s.meaningKo}</p>)}{w.sources.map((s,i)=><small key={i}>{s.source} / PDF {s.page}쪽 / 항목 {s.number}<br /></small>)}</details></article>)}{!dictionary.length && <p>검색 결과가 없습니다.</p>}<div className="vocab-actions"><button disabled={!page} onClick={()=>setPage(page-1)}>이전</button><span>{page+1} / {Math.max(1,Math.ceil(dictionary.length/20))}</span><button disabled={(page+1)*20>=dictionary.length} onClick={()=>setPage(page+1)}>다음</button></div></>}
+    {deck && screen === "conversation" && <><h1>AI 회화</h1><p className="muted">단어장 이름이나 번호로 AI에게 회화 연습을 요청하세요. 같은 단어로 상황과 문장 패턴을 바꾸며 대화할 수 있습니다.</p>{bookSelector}
+      {book ? <><div className="scope-summary"><strong>{book.number}번 {book.name}</strong><p>{book.description} / {focus.length}개 단어</p></div><details><summary>회화에 사용할 단어 보기</summary>{wordsTable(focus)}</details><div className="mcp-status"><strong>{mcp ? "WebMCP 도구 준비됨" : "요청문으로 회화 시작"}</strong><p>예: “{book.number}번 {book.name} 단어장으로 대화하자. 질문과 문장 패턴을 다양하게 바꿔줘.”</p></div><div className="vocab-button-stack"><button className="button primary wide" onClick={()=>void copy(prompt)}>AI 회화 요청문 복사</button><button className="button outline wide" onClick={()=>void copy(conversationContext(deck,scope,location.origin).pageUrl)}>단어장 회화 링크 복사</button><button className="text-link" onClick={()=>download(conversationContext(deck,scope,location.origin),`${book.id}-conversation.json`)}>회화 단어장 JSON 내려받기</button></div><details className="conversation-prompt"><summary>AI에게 전달할 요청문 보기</summary><textarea aria-label="AI 회화 요청문" readOnly value={prompt} rows={12} /></details></> : <p className="scope-summary">{mcp ? "WebMCP에서 단어장 목록을 조회하고 이름이나 번호로 바로 선택할 수 있습니다." : "위 목록에서 회화에 사용할 단어장을 선택하세요."}</p>}
+      <div className="scope-checker"><h2>예문 어휘 검사</h2><textarea aria-label="범위 검사할 중국어" placeholder="我喜欢学习中文。" value={example} maxLength={2000} onChange={e=>{setExample(e.target.value);setCheck(null);}} /><button className="button outline" disabled={!example.trim()} onClick={()=>setCheck(checkScope(example,deck))}>단어 범위 검사</button>{check && <p role="status">{check.withinVocabulary ? "HSK 통합 단어장 어휘로 분리할 수 있습니다." : `단어장에서 확인되지 않은 글자: ${check.unknownHanzi.join(" / ")}`}</p>}<p className="small-note">집중 어휘는 선택한 단어장, 보조 어휘는 전체 HSK 1–4급 자료를 사용합니다. 검사는 어휘 분리 기준이며 문법과 복합어 의미까지 보장하지 않습니다.</p></div><div className="connection-note"><h3>연결 방법</h3><p>WebMCP 지원 브라우저의 AI 에이전트는 이 페이지에서 단어장을 읽을 수 있습니다. 일반 ChatGPT에서는 요청문을 붙여넣고 필요한 경우 단어장 JSON을 첨부하세요. 이 정적 페이지는 원격 MCP 서버 주소가 아닙니다.</p></div>
+    </>}
+    {deck && screen === "review" && <><h1>단어장 다시 풀기</h1><p>누적 학습 이력은 저장하지 않습니다. 원하는 단어장을 골라 다시 풀어보세요.</p><Link className="button primary" href="/ko/chinese/learn">단어장 목록</Link></>}
+    {deck && screen === "settings" && <><h1>학습 안내</h1><p>단어장을 누르면 해당 단어 전체로 퀴즈를 시작합니다. 문제 순서는 매번 달라집니다.</p><p>점수와 병음 표시 설정은 현재 화면에서만 사용합니다. 쿠키나 localStorage에 학습 이력을 저장하지 않습니다.</p><a className="text-link" href={decks.find(d=>d.id===deck.id)!.url} download>전체 단어장 JSON 내려받기</a></>}
   </div>;
 }
