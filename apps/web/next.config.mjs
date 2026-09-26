@@ -8,7 +8,15 @@ const nextConfig = {
   // API_URL 미설정 시(예: 블로그만 배포) 이 rewrite는 비활성화된다.
   // 루트(/) 접속은 기본 언어로 보낸다. (필요 시 추후 Accept-Language 기반 미들웨어로 교체)
   async redirects() {
-    return [{ source: "/", destination: "/ko", permanent: false }];
+    return [
+      { source: "/", destination: "/en", permanent: false },
+      { source: "/fbx/:path*", destination: "/en/fbx/:path*", permanent: false },
+      { source: "/webtoon/:path*", destination: "/en/webtoon/:path*", permanent: false },
+      { source: "/chinese/:path*", destination: "/ko/chinese/:path*", permanent: false },
+      { source: "/lab", destination: "/ko/lab", permanent: false },
+      { source: "/:lang(en|ko|ja|zh|es)/novel", destination: "/en/webtoon", permanent: true },
+      { source: "/:lang(en|ko|ja|zh|es)/novel/:slug", destination: "/en/webtoon/:slug", permanent: true },
+    ];
   },
   async rewrites() {
     const apiUrl = process.env.API_URL;

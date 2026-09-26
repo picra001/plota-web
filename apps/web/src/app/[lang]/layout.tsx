@@ -10,7 +10,7 @@ import { languageAlternates } from "@/lib/seo";
 const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
   weight: "400",
-  style: ["normal", "italic"],
+  style: "normal",
   variable: "--font-instrument-serif",
   display: "swap",
 });

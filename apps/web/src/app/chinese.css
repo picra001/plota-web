@@ -1,0 +1,51 @@
+.vocabulary-app { max-width: 620px; }
+.vocabulary-app h1 { line-height: 1.3; }
+.deck-feature { position: relative; padding: 28px; border: 1px solid #ddd9ce; border-radius: 20px; background: #f0eee5; overflow: hidden; }
+.deck-cover { width: 98px; height: 123px; margin: 20px 0; border-radius: 4px 14px 14px 4px; border-left: 7px solid #214e41; background: #326953; color: #fcf8ed; box-shadow: 6px 7px 0 #dedbcf; display: grid; place-content: center; text-align: center; font-size: 52px; }
+.deck-cover span { font-family: monospace; font-size: 10px; letter-spacing: 1px; }
+.deck-feature h2 { font-size: 24px; margin-bottom: 10px; }
+.deck-feature > p { color: #59645b; line-height: 1.8; margin-bottom: 24px; }
+.deck-feature .text-link { display: block; text-align: center; margin: 18px 0 0; }
+.vocab-selector { margin: 28px 0 20px; display: grid; gap: 16px; }
+.vocab-selector label, .vocab-search { display: grid; gap: 9px; font-size: 13px; font-weight: 600; }
+.vocab-selector select, .vocab-search input, .conversation-prompt textarea, .scope-checker textarea { width: 100%; min-width: 0; border: 1px solid #d5dacf; border-radius: 10px; padding: 13px; background: #fffef9; color: #203d32; font: inherit; }
+.vocab-select-row { display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; }
+.scope-summary { border-radius: 14px; background: #edf1e8; padding: 22px; margin: 20px 0; }
+.scope-summary strong { font-size: 24px; }
+.scope-summary p { margin: 10px 0 0; color: #576355; font-size: 14px; line-height: 1.8; }
+.vocabulary-app > .text-link { display: inline-block; margin: 18px 0; }
+.vocabulary-app .quiz-card .hanzi { font-size: clamp(30px, 8vw, 58px); overflow-wrap: anywhere; line-height: 1.5; }
+.vocabulary-app .quiz-card .pinyin { overflow-wrap: anywhere; }
+.vocabulary-app .answer-options button { line-height: 1.7; font-size: 14px; text-align: left; }
+.vocabulary-app .answer-options button span { flex-shrink: 0; }
+.quiz-score { font-size: 60px; font-weight: 650; margin: 20px 0; }
+.quiz-score span { color: #7d8877; font-size: 30px; }
+.lesson-complete .button { margin: 12px 0; }
+.vocab-word { border: 1px solid #e0e3d9; background: #fffef9; border-radius: 16px; padding: 22px; margin: 16px 0; }
+.vocab-word > div:first-child { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.vocab-word strong { font-size: 29px; font-weight: 550; overflow-wrap: anywhere; }
+.vocab-word p { margin: 8px 0; line-height: 1.8; font-size: 14px; }
+.vocab-word .pinyin { font-size: 15px; }
+.vocab-word details { margin-top: 18px; color: #687466; font-size: 12px; }
+.vocab-word summary { cursor: pointer; }
+.vocab-word details small { line-height: 1.8; }
+.vocab-actions { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin: 16px 0 0; }
+.vocab-actions button { font-size: 13px; min-height: 36px; color: #326953; }
+.vocab-actions button:disabled { opacity: .4; }
+.focus-words { display: flex; gap: 8px; flex-wrap: wrap; margin: 22px 0; }
+.focus-words span { padding: 8px 13px; background: #edf1e7; border-radius: 8px; font-size: 20px; }
+.mcp-status { border-top: 1px solid #dce1d4; border-bottom: 1px solid #dce1d4; padding: 20px 0; margin: 24px 0; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #b09766; margin-right: 8px; }
+.status-dot.connected { background: #47845f; }
+.mcp-status p, .connection-note p, .scope-checker p { color: #60705f; font-size: 13px; line-height: 1.9; margin-top: 10px; }
+.vocab-button-stack { display: grid; gap: 12px; }
+.conversation-prompt { margin: 22px 0; font-size: 13px; }
+.conversation-prompt textarea { margin-top: 12px; line-height: 1.8; resize: vertical; }
+.scope-checker { background: #f0eee5; border-radius: 16px; padding: 22px; margin-top: 30px; }
+.scope-checker h2 { font-size: 18px; }
+.scope-checker textarea { margin: 16px 0; min-height: 100px; }
+.connection-note { margin-top: 28px; }
+.connection-note h3 { font-size: 16px; }
+.chinese-site .learning-nav { grid-template-columns: repeat(5, 1fr); }
+.vocabulary-app button:focus-visible, .vocabulary-app a:focus-visible, .vocabulary-app input:focus-visible, .vocabulary-app select:focus-visible, .vocabulary-app summary:focus-visible { outline: 2px solid #326953; outline-offset: 4px; }
+@media(max-width: 480px) { .deck-feature { padding: 22px; } .vocab-word { padding: 18px; } .vocabulary-app .answer-options button { padding: 14px; } .vocabulary-app .learning-topline { font-size: 10px; } }

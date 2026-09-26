@@ -106,7 +106,7 @@ export default async function NovelPostPage({
       <div className="mt-[26px] font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">
         EP {novel.ep} · {novel.status === "LIVE" ? dict.ui.statusLive : dict.ui.statusDraft}
       </div>
-      <h1 className="m-0 mt-2.5 font-display text-[clamp(38px,7vw,58px)] font-normal italic leading-[1.04]">
+      <h1 className="m-0 mt-2.5 font-display text-[clamp(38px,7vw,58px)] font-normal leading-[1.04]">
         {novel.title}
       </h1>
       <p className="mt-4 max-w-[46ch] font-sans text-[17px] leading-[1.6] text-ink-2">
@@ -142,7 +142,6 @@ export default async function NovelPostPage({
                   style={{
                     color: accent ? "#F4EFE4" : "var(--ink)",
                     fontFamily: accent ? "var(--font-display)" : "var(--font-sans)",
-                    fontStyle: accent ? "italic" : "normal",
                     fontSize: accent ? "21px" : "14px",
                   }}
                 >

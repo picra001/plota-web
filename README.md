@@ -1,5 +1,9 @@
 # PLOTA.AI
 
+> **2026-09-25 개편:** 현재 구조와 작업 안내는 [docs/PROJECT_CONTEXT.md](./docs/PROJECT_CONTEXT.md)를 우선 참고하세요.
+> 허브·FBX 제작/에셋·웹툰은 영어 기본, Lab·중국어 학습은 한국어 기본입니다.
+> 실제 운영은 Git 연동 Cloudflare 배포이며 별도 백엔드 서버가 없습니다. 아래의 과거 Vercel 운영·Cloudflare 미사용 설명은 현재 운영 기준이 아닙니다.
+
 PLOTA.AI는 **사람이 그린 2D 이미지를 3D 모델로 변환하는 서비스**다. 별도 설치 없이 무료로 변환해 볼 수 있는 웹 워크플로와, 사용자 장비에 직접 구축할 수 있는 무료 로컬 설치 프로그램을 제공하는 것을 목표로 한다.
 
 현재 코어 서비스는 개발 중이며, 이 저장소는 제품 소개 페이지와 5개 언어(ko·en·ja·zh·es)로 발행하는 콘텐츠 영역을 함께 관리한다. 콘텐츠 페이지는 에디터 없이 **마크다운 파일**로 작성하고 정적(SSG)으로 생성한다.
@@ -155,7 +159,11 @@ example.com           → Vercel  (apps/web, Next.js 정적)
 example.com/api/*      → Vercel rewrite로 Railway(apps/api)에 프록시
 ```
 
-### 1. FE — Vercel (`apps/web`)
+> **이 사이트의 실제 배포 플랫폼은 Vercel이다.** `main`에 push하면 Vercel Git 연동이 자동으로 빌드·배포한다.
+> 저장소에 Cloudflare 설정 파일(`apps/web/wrangler.jsonc`, `open-next.config.ts`)이 함께 있어 혼동하기 쉬운데,
+> 그쪽은 **사용하지 않는 실험 흔적**이다. 자세한 내용은 아래 [Cloudflare Workers 설정](#부록--cloudflare-workers-설정미사용) 참고.
+
+### 1. FE — Vercel (`apps/web`) ← **현재 운영 중**
 
 1. 이 저장소를 GitHub(`picra001/plota-web`)에 push
 2. Vercel → New Project → 저장소 선택
@@ -193,3 +201,24 @@ example.com/api/*      → Vercel rewrite로 Railway(apps/api)에 프록시
 | 빌드 트리거 제한 | `npx turbo-ignore` | Watch Paths |
 | 비용 | 정적 → 무료 티어 | 무료 티어(스케일-투-제로 우선) |
 | 연결 | `API_URL` 로 BE 프록시 | — |
+
+## 부록 — Cloudflare Workers 설정(미사용)
+
+`apps/web`에는 OpenNext + Wrangler로 Cloudflare Workers에 올리는 설정이 남아 있다.
+**운영에 쓰지 않는 실험 흔적이므로, 배포가 안 될 때 이쪽을 먼저 의심하지 말 것.**
+
+| 파일 / 스크립트 | 역할 |
+|---|---|
+| `apps/web/wrangler.jsonc` | Worker 이름 `web`, 엔트리 `.open-next/worker.js` |
+| `apps/web/open-next.config.ts` | OpenNext Cloudflare 어댑터 설정 |
+| `pnpm run preview` | OpenNext 빌드 후 로컬 Workers 런타임으로 미리보기 |
+| `pnpm run deploy` | OpenNext 빌드 후 Worker에 업로드 (**수동 전용, CI 없음**) |
+
+기억해 둘 점:
+
+- **Git push로는 Cloudflare에 배포되지 않는다.** `.github/workflows`도, Cloudflare Dashboard의 Git 연동도 없다.
+- `pnpm deploy`는 pnpm 내장 명령과 이름이 겹치므로, 스크립트를 실행하려면 반드시 `pnpm run deploy`로 쓴다.
+- **Windows에서 이 빌드는 실패한다.** OpenNext가 pnpm 모노레포의 심링크와 경로 구분자를 처리하지 못해
+  `Failed to copy ...` 에러가 대량 발생하고, 업로드는 성공해도 런타임에 모든 요청이 500으로 죽는다
+  (`Dynamic require of "/.next/server/middleware-manifest.json" is not supported` — 앱 디렉터리 접두사가 빠진 경로).
+  되살릴 경우 빌드는 WSL이나 리눅스 CI에서 해야 한다.

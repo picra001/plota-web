@@ -131,9 +131,9 @@ export default async function DevlogIndexPage({
       </span>
       <h1 className="m-0 mt-3.5 font-sans text-[clamp(34px,5.5vw,52px)] font-medium leading-[1.06] tracking-[-0.015em]">
         {dict.dev.title.pre}
-        <em className="font-display font-normal italic text-vermilion">
+        <span className="font-display font-normal text-vermilion">
           {dict.dev.title.accent}
-        </em>
+        </span>
         {dict.dev.title.post}
       </h1>
       <p className="mt-[18px] max-w-[52ch] font-sans text-base leading-[1.55] text-ink-2">

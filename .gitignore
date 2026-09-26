@@ -32,3 +32,6 @@ Thumbs.db
 
 # misc
 *.tsbuildinfo
+
+# Local PDF extraction and OCR models
+tmp/pdfs/

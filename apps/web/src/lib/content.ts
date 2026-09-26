@@ -47,9 +47,9 @@ function childDirs(dir: string): string[] {
     .map((d) => d.name);
 }
 
-/** {slug}/{locale}.md 를 읽되, 없으면 기본 언어(ko)로 폴백한다. */
+/** 요청 언어 → 영어 → 기존 한국어 원문 순서로 폴백한다. */
 function readLocaleFile(dir: string, locale: Locale) {
-  const tryOrder = [locale, defaultLocale];
+  const tryOrder = [...new Set([locale, defaultLocale, "ko"])];
   for (const lc of tryOrder) {
     const file = path.join(dir, `${lc}.md`);
     if (fs.existsSync(file)) {
@@ -73,7 +73,7 @@ function readFolderMeta(dir: string): FolderMeta {
 }
 
 function folderTitle(meta: FolderMeta, dirName: string, locale: Locale): string {
-  return meta.title?.[locale] ?? meta.title?.[defaultLocale] ?? dirName;
+  return meta.title?.[locale] ?? meta.title?.[defaultLocale] ?? meta.title?.ko ?? dirName;
 }
 
 function toISO(value: unknown): string {

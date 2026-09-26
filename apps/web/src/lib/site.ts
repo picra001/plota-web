@@ -3,7 +3,7 @@ import type { Locale } from "./i18n";
 export const site = {
   name: "PLOTA.AI",
   // 배포 도메인이 정해지면 환경변수(NEXT_PUBLIC_SITE_URL)로 덮어쓴다.
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://plota.dev",
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://plota.ai",
   author: {
     name: "PLOTA",
     url: "https://github.com/picra001/plota-web",
@@ -18,9 +18,9 @@ export const siteMeta: Record<Locale, { title: string; description: string }> = 
       "PLOTA.AI는 사람이 그린 2D 이미지를 3D 모델로 변환합니다. 무료 웹 변환과 무료 로컬 설치 프로그램을 준비하고 있습니다.",
   },
   en: {
-    title: "PLOTA.AI — From hand-drawn 2D to 3D",
+    title: "PLOTA — A small studio. Many possibilities.",
     description:
-      "PLOTA.AI turns hand-drawn 2D images into 3D models, with a free web workflow and a free local installer in development.",
+      "An independent studio for creative tools, original webtoons, and small everyday learning experiments.",
   },
   ja: {
     title: "PLOTA.AI — 手描きの2Dを3Dモデルへ",

@@ -107,7 +107,7 @@ function TreeGroup({
                   {n.status === "DRAFT" ? dict.ui.statusDraft : dict.ui.statusLive}
                 </span>
               </div>
-              <h3 className="pl-covertitle m-0 mt-4 font-display text-[25px] font-normal italic leading-[1.1] text-ink transition-colors">
+              <h3 className="pl-covertitle m-0 mt-4 font-display text-[25px] font-normal leading-[1.1] text-ink transition-colors">
                 {n.title}
               </h3>
               <p className="mt-2 font-sans text-sm leading-[1.5] text-ink-2">
@@ -139,9 +139,9 @@ export default async function NovelIndexPage({
       </span>
       <h1 className="m-0 mt-3.5 font-sans text-[clamp(34px,5.5vw,52px)] font-medium leading-[1.06] tracking-[-0.015em]">
         {dict.nov.title.pre}
-        <em className="font-display font-normal italic text-vermilion">
+        <span className="font-display font-normal text-vermilion">
           {dict.nov.title.accent}
-        </em>
+        </span>
         {dict.nov.title.post}
       </h1>
       <p className="mt-[18px] max-w-[52ch] font-sans text-base leading-[1.55] text-ink-2">
