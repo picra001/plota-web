@@ -36,3 +36,6 @@ A compatible browser agent can invoke JavaScript tools without a backend. An ord
 
 - https://developer.chrome.com/docs/ai/webmcp/imperative-api
 - https://developers.openai.com/plugins/deploy/connect-chatgpt
+
+## WebMCP-only verification
+When asked to verify WebMCP, discover and call the registered tools through the browser's WebMCP transport. Do not substitute DOM text, HTML, static JSON fetches, or direct application function calls and label them a WebMCP success. If the client lacks a WebMCP transport, report that limitation. Registration, page self-diagnostics, and external agent calls are separate states. The conversation page has an explicit self-diagnostic using document.modelContext.getTools/executeTool; it does not prove external client connectivity.

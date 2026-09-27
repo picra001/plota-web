@@ -1,7 +1,8 @@
 "use client";
 import Link from "./localized-link";
+import { useChineseWebMcp } from "./chinese-webmcp";
 import { useEffect, useState } from "react";
-import { bookWords, checkScope, choicesFor, conversationContext, conversationPrompt, decks, defaultScope, focusFor, gloss, readings, resolveBook, runVocabularyTool, scopeFromSearch, scopeQuery, shuffled, vocabularyToolSpecs, type Deck, type Scope, type ThemeBook, type Word } from "@/lib/chinese-vocabulary";
+import { bookWords, checkScope, choicesFor, conversationContext, conversationPrompt, decks, defaultScope, focusFor, gloss, readings, resolveBook, scopeFromSearch, scopeQuery, shuffled, type Deck, type Scope, type ThemeBook, type Word } from "@/lib/chinese-vocabulary";
 
 type Quiz = { words: Word[]; index: number; choices: string[]; answer: string | null; score: number; finished: boolean };
 function newQuiz(words: Word[], deck: Deck): Quiz {
@@ -18,7 +19,7 @@ export function ChineseApp({ screen }: { screen: string }) {
   const [deck, setDeck] = useState<Deck | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [notice, setNotice] = useState("");
-  const [mcp, setMcp] = useState(false);
+  const { ready: mcp, panel: mcpPanel } = useChineseWebMcp(deck, scope);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -43,14 +44,6 @@ export function ChineseApp({ screen }: { screen: string }) {
     const b = scope.book ? resolveBook(deck, scope.book) : undefined;
     setQuiz(b ? newQuiz(bookWords(deck, b), deck) : null);
   }, [deck, scope.book, screen]);
-  useEffect(() => {
-    if (!deck) return;
-    const context = (document as Document & { modelContext?: { registerTool: (tool: unknown, options: { signal: AbortSignal }) => void | Promise<void> } }).modelContext;
-    setMcp(false); if (!context) return;
-    const controller = new AbortController();
-    try { Promise.all(vocabularyToolSpecs.map(spec => context.registerTool({ ...spec, annotations: { readOnlyHint: true }, execute: (input: unknown) => JSON.stringify(runVocabularyTool(spec.name, input, deck, scope, location.origin)) }, { signal: controller.signal }))).then(() => { if (!controller.signal.aborted) setMcp(true); }).catch(() => { controller.abort(); setMcp(false); }); } catch { controller.abort(); }
-    return () => controller.abort();
-  }, [deck, scope]);
   useEffect(() => () => { if ("speechSynthesis" in window) speechSynthesis.cancel(); }, []);
   function selectBook(b?: ThemeBook) {
     const next = { ...defaultScope, deckId: scope.deckId, ...(b ? { book: b.id } : {}) };
@@ -101,8 +94,8 @@ export function ChineseApp({ screen }: { screen: string }) {
     </>)}
     {deck && screen === "vocabulary" && <><h1>단어 사전</h1>{bookSelector}<label className="vocab-search">단어 검색<input value={query} onChange={e=>{setQuery(e.target.value);setPage(0);}} placeholder="중국어, 병음 또는 한국어" /></label><p className="muted">{dictionary.length}개 단어</p>{dictionary.slice(page*20,(page+1)*20).map(w=><article className="vocab-word" key={w.id}><strong lang="zh-Hans">{w.hanzi}</strong><p className="pinyin">{readings(w)}</p><p>{gloss(w)}</p><button className="text-link" onClick={()=>speak(w.hanzi)}>발음 듣기</button><details><summary>원본 발음과 출처</summary>{w.senses.map((s,i)=><p key={i}>{s.pinyin} / {s.meaningKo}</p>)}{w.sources.map((s,i)=><small key={i}>{s.source} / PDF {s.page}쪽 / 항목 {s.number}<br /></small>)}</details></article>)}{!dictionary.length && <p>검색 결과가 없습니다.</p>}<div className="vocab-actions"><button disabled={!page} onClick={()=>setPage(page-1)}>이전</button><span>{page+1} / {Math.max(1,Math.ceil(dictionary.length/20))}</span><button disabled={(page+1)*20>=dictionary.length} onClick={()=>setPage(page+1)}>다음</button></div></>}
     {deck && screen === "conversation" && <><h1>AI 회화</h1><p className="muted">단어장 이름이나 번호로 AI에게 회화 연습을 요청하세요. 같은 단어로 상황과 문장 패턴을 바꾸며 대화할 수 있습니다.</p>{bookSelector}
-      {book ? <><div className="scope-summary"><strong>{book.number}번 {book.name}</strong><p>{book.description} / {focus.length}개 단어</p></div><details><summary>회화에 사용할 단어 보기</summary>{wordsTable(focus)}</details><div className="mcp-status"><strong>{mcp ? "WebMCP 도구 준비됨" : "요청문으로 회화 시작"}</strong><p>예: “{book.number}번 {book.name} 단어장으로 대화하자. 질문과 문장 패턴을 다양하게 바꿔줘.”</p></div><div className="vocab-button-stack"><button className="button primary wide" onClick={()=>void copy(prompt)}>AI 회화 요청문 복사</button><button className="button outline wide" onClick={()=>void copy(conversationContext(deck,scope,location.origin).pageUrl)}>단어장 회화 링크 복사</button><button className="text-link" onClick={()=>download(conversationContext(deck,scope,location.origin),`${book.id}-conversation.json`)}>회화 단어장 JSON 내려받기</button></div><details className="conversation-prompt"><summary>AI에게 전달할 요청문 보기</summary><textarea aria-label="AI 회화 요청문" readOnly value={prompt} rows={12} /></details></> : <p className="scope-summary">{mcp ? "WebMCP에서 단어장 목록을 조회하고 이름이나 번호로 바로 선택할 수 있습니다." : "위 목록에서 회화에 사용할 단어장을 선택하세요."}</p>}
-      <div className="scope-checker"><h2>예문 어휘 검사</h2><textarea aria-label="범위 검사할 중국어" placeholder="我喜欢学习中文。" value={example} maxLength={2000} onChange={e=>{setExample(e.target.value);setCheck(null);}} /><button className="button outline" disabled={!example.trim()} onClick={()=>setCheck(checkScope(example,deck))}>단어 범위 검사</button>{check && <p role="status">{check.withinVocabulary ? "HSK 통합 단어장 어휘로 분리할 수 있습니다." : `단어장에서 확인되지 않은 글자: ${check.unknownHanzi.join(" / ")}`}</p>}<p className="small-note">집중 어휘는 선택한 단어장, 보조 어휘는 전체 HSK 1–4급 자료를 사용합니다. 검사는 어휘 분리 기준이며 문법과 복합어 의미까지 보장하지 않습니다.</p></div><div className="connection-note"><h3>연결 방법</h3><p>WebMCP 지원 브라우저의 AI 에이전트는 이 페이지에서 단어장을 읽을 수 있습니다. 일반 ChatGPT에서는 요청문을 붙여넣고 필요한 경우 단어장 JSON을 첨부하세요. 이 정적 페이지는 원격 MCP 서버 주소가 아닙니다.</p></div>
+      {book ? <><div className="scope-summary"><strong>{book.number}번 {book.name}</strong><p>{book.description} / {focus.length}개 단어</p></div><details><summary>회화에 사용할 단어 보기</summary>{wordsTable(focus)}</details><div className="mcp-status"><strong>{mcp ? "WebMCP 도구 등록됨" : "요청문으로 회화 시작"}</strong><p>예: “{book.number}번 {book.name} 단어장으로 대화하자. 질문과 문장 패턴을 다양하게 바꿔줘.”</p></div><div className="vocab-button-stack"><button className="button primary wide" onClick={()=>void copy(prompt)}>AI 회화 요청문 복사</button><button className="button outline wide" onClick={()=>void copy(conversationContext(deck,scope,location.origin).pageUrl)}>단어장 회화 링크 복사</button><button className="text-link" onClick={()=>download(conversationContext(deck,scope,location.origin),`${book.id}-conversation.json`)}>회화 단어장 JSON 내려받기</button></div><details className="conversation-prompt"><summary>AI에게 전달할 요청문 보기</summary><textarea aria-label="AI 회화 요청문" readOnly value={prompt} rows={12} /></details></> : <p className="scope-summary">{mcp ? "WebMCP에서 단어장 목록을 조회하고 이름이나 번호로 바로 선택할 수 있습니다." : "위 목록에서 회화에 사용할 단어장을 선택하세요."}</p>}
+      {mcpPanel}<div className="scope-checker"><h2>예문 어휘 검사</h2><textarea aria-label="범위 검사할 중국어" placeholder="我喜欢学习中文。" value={example} maxLength={2000} onChange={e=>{setExample(e.target.value);setCheck(null);}} /><button className="button outline" disabled={!example.trim()} onClick={()=>setCheck(checkScope(example,deck))}>단어 범위 검사</button>{check && <p role="status">{check.withinVocabulary ? "HSK 통합 단어장 어휘로 분리할 수 있습니다." : `단어장에서 확인되지 않은 글자: ${check.unknownHanzi.join(" / ")}`}</p>}<p className="small-note">집중 어휘는 선택한 단어장, 보조 어휘는 전체 HSK 1–4급 자료를 사용합니다. 검사는 어휘 분리 기준이며 문법과 복합어 의미까지 보장하지 않습니다.</p></div><div className="connection-note"><h3>연결 방법</h3><p>WebMCP 지원 브라우저의 AI 에이전트는 이 페이지에서 단어장을 읽을 수 있습니다. 일반 ChatGPT에서는 요청문을 붙여넣고 필요한 경우 단어장 JSON을 첨부하세요. 이 정적 페이지는 원격 MCP 서버 주소가 아닙니다.</p></div>
     </>}
     {deck && screen === "review" && <><h1>단어장 다시 풀기</h1><p>누적 학습 이력은 저장하지 않습니다. 원하는 단어장을 골라 다시 풀어보세요.</p><Link className="button primary" href="/ko/chinese/learn">단어장 목록</Link></>}
     {deck && screen === "settings" && <><h1>학습 안내</h1><p>단어장을 누르면 해당 단어 전체로 퀴즈를 시작합니다. 문제 순서는 매번 달라집니다.</p><p>점수와 병음 표시 설정은 현재 화면에서만 사용합니다. 쿠키나 localStorage에 학습 이력을 저장하지 않습니다.</p><a className="text-link" href={decks.find(d=>d.id===deck.id)!.url} download>전체 단어장 JSON 내려받기</a></>}

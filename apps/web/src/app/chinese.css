@@ -73,3 +73,7 @@
 .chinese-site .learning-nav { grid-template-columns: repeat(5, 1fr); }
 .vocabulary-app button:focus-visible, .vocabulary-app a:focus-visible, .vocabulary-app input:focus-visible, .vocabulary-app select:focus-visible, .vocabulary-app summary:focus-visible { outline: 2px solid #326953; outline-offset: 4px; }
 @media(max-width: 480px) { .deck-feature { padding: 22px; } .vocab-word { padding: 18px; } .vocabulary-app .answer-options button { padding: 14px; } .vocabulary-app .learning-topline { font-size: 10px; } }
+
+.webmcp-diagnostics { margin-top: 24px; padding: 16px; border: 1px solid #d5dacf; border-radius: 12px; font-size: 13px; overflow-wrap: anywhere; }
+.webmcp-diagnostics p, .webmcp-diagnostics li { line-height: 1.7; margin: 10px 0; }
+.webmcp-diagnostics ul { padding-left: 20px; }
