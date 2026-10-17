@@ -201,7 +201,10 @@ img {
   padding: 4px 0 4px 20px;
   border-left: 2px solid var(--vermilion);
   color: var(--ink-2);
-  font-style: italic;
+}
+.prose em,
+.prose i {
+  font-style: normal;
 }
 .prose code {
   font-family: var(--font-mono);
