@@ -20,6 +20,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       alternates: { languages },
     };
   });
-  const current = ["/en", "/ko/lab", ...productPaths.map(p => `/${p.startsWith("chinese") ? "ko" : "en"}/${p}`)];
+  const current = ["/en", "/ko/lab", ...productPaths.filter(p => p !== "fbx/job").map(p => `/${p.startsWith("chinese") ? "ko" : "en"}/${p}`)];
   return [...current.map(url => ({ url: absoluteUrl(url), changeFrequency: "weekly" as const, priority: url === "/en" ? 1 : 0.7 })), ...journal];
 }

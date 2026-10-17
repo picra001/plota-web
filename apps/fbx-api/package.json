@@ -1,0 +1,18 @@
+{
+  "name": "@plota/fbx-api",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "tail": "wrangler tail fbx-api --format pretty",
+    "db:apply": "wrangler d1 execute fbx-jobs --remote --file=./schema.sql",
+    "db:apply:local": "wrangler d1 execute fbx-jobs --local --file=./schema.sql"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5",
+    "typescript": "^5.5.4",
+    "wrangler": "^4.112.0"
+  }
+}

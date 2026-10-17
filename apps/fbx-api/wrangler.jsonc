@@ -1,0 +1,51 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "fbx-api",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-07-19",
+	"workers_dev": true,
+	"observability": {
+		"enabled": true
+	},
+	// D1 (2026-10-17 생성, APAC). 바인딩 이름은 코드가 쓰는 DB 로 고정 — wrangler 가 자동으로 넣는 fbx_jobs 는 지운다.
+	// "remote": true 는 넣지 않는다. 그걸 켜면 `wrangler dev`·test_api.sh 가 운영 D1 에 직접 쓴다.
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "fbx-jobs",
+			"database_id": "2844dea8-81ca-46ba-965e-a1a7d0413ddd"
+		}
+	],
+	// R2: P0-3 에서 만든 버킷. 공개 도메인 assets.plota.ai 는 대시보드에서 연결 (README §3)
+	"r2_buckets": [
+		{
+			"binding": "BUCKET",
+			"bucket_name": "plota-assets"
+		}
+	],
+	// 5분마다: heartbeat 끊긴 running → failed, 오래된 failed 입력 삭제
+	"triggers": {
+		"crons": [
+			"*/5 * * * *"
+		]
+	},
+	"vars": {
+		"ASSETS_BASE": "https://assets.plota.ai",
+		"ALLOW_ORIGIN": "https://plota.ai",
+		"QUEUE_MAX": "5",
+		"WORKER_ONLINE_SEC": "90",
+		"LEASE_LOST_SEC": "900",
+		"INPUT_KEEP_DAYS": "7"
+	},
+	// 시크릿(값은 커밋하지 않는다. README §2 의 `wrangler secret put`):
+	//   WORKER_TOKEN  집 PC 워커용 Bearer
+	//   ADMIN_TOKEN   운영자용 Bearer
+	//   INVITE_CODES  초대코드 쉼표 구분
+	// 커스텀 도메인. 존이 준비되기 전에는 이 블록을 주석 처리하고 workers.dev 로 테스트한다.
+	"routes": [
+		{
+			"pattern": "fbx-api.plota.ai",
+			"custom_domain": true
+		}
+	]
+}

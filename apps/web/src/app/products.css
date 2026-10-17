@@ -17,3 +17,52 @@
 .daily-card .hanzi{font-size:clamp(60px,18vw,84px);white-space:nowrap}
 .hub-site{--paper:#f6f3ed;--paper-2:#eeeadf;--paper-3:#e6e2d8;--paper-edge:#dcded4;--ink:#323a33;--ink-2:#535c51;--ink-3:#767e70;--ink-4:#a0a696}
 @media(prefers-reduced-motion:reduce){.product-site *,.hub-site *{transition:none!important;scroll-behavior:auto!important}.asset-card:hover .asset-art,.story-card:hover .story-art,.project-card:hover{transform:none}}
+
+/* ---- FBX 접수·결과 화면 (P3, 2026-10-12). 기존 .creation-demo 격자와 변수를 그대로 쓴다 ---- */
+.fbx-input{width:100%;border:1px solid var(--line);background:#fff8;padding:12px 14px;font-size:14px;border-radius:3px;color:var(--text);font-family:inherit}
+.fbx-dropzone{border:1px dashed var(--line);background:#fff8;border-radius:5px;padding:20px;text-align:center}
+.fbx-dropzone.dragging{border-color:var(--accent);background:#fff}
+.fbx-dropzone input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.fbx-dropzone p{font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.7;word-break:break-word}
+.fbx-fieldset{border:1px solid var(--line);border-radius:5px;padding:16px 18px 18px;margin:8px 0 0}
+.fbx-fieldset legend{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:0 6px}
+.creation-controls .fbx-check{display:flex;align-items:flex-start;gap:10px;font-size:13px;margin:10px 0;line-height:1.6}
+.creation-controls .fbx-check input{margin:2px 0 0;flex:none}
+.creation-controls .fbx-check .text-link{margin-left:auto;font-size:12px;background:none;border:0;padding:0;cursor:pointer}
+.fbx-fieldset>.button{margin-top:14px}
+.fbx-error{border:1px solid #d8a6a0;background:#fdeeec;color:#7b2f26;font-size:12px;line-height:1.7;padding:12px 14px;border-radius:5px;margin:18px 0 0}
+.fbx-drawing-preview{display:block;width:100%;max-height:330px;object-fit:contain;border-radius:3px}
+.fbx-placeholder{min-height:220px;border:1px dashed var(--line);border-radius:3px}
+.fbx-viewer{display:block;width:100%;height:360px;background:#e5eadd;border-radius:3px;--poster-color:#e5eadd}
+.fbx-progress-track{height:6px;background:var(--line);border-radius:999px;overflow:hidden}
+.fbx-progress-fill{height:100%;background:var(--accent);border-radius:999px;transition:width .4s ease}
+.fbx-progress p{font-size:12px;color:var(--muted);margin:10px 0 0}
+.fbx-downloads .button{margin-bottom:10px}
+.fbx-job{padding:30px 0 10px}
+.fbx-job-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;border-bottom:1px solid var(--line);padding-bottom:22px}
+.fbx-job-head h1{font-size:40px;margin:8px 0 0}
+.fbx-job-body{display:grid;grid-template-columns:1.15fr 1fr;gap:34px;margin-top:30px}
+.fbx-job-stage{background:#e5eadd;border:1px solid var(--line);border-radius:5px;padding:18px;display:flex;align-items:center;justify-content:center;min-height:260px}
+.fbx-job-side>p{font-size:13px;line-height:1.8}
+.fbx-job-side .asset-specs{margin-top:26px}
+.fbx-failed p{font-size:13px;line-height:1.8}
+.fbx-failed .button{margin-top:14px}
+.fbx-job-empty{padding:70px 0;text-align:center}
+.fbx-job-empty h1{font-size:34px;margin-bottom:12px}
+.fbx-job-empty p{font-size:14px;color:var(--muted);margin-bottom:22px}
+.fbx-title-edit{border-top:1px solid var(--line);margin-top:34px;padding-top:22px}
+.fbx-title-edit label{display:block;font-size:12px;color:var(--muted);margin-bottom:8px}
+.fbx-title-row{display:flex;gap:12px}
+.fbx-title-row .fbx-input{max-width:420px}
+@media(max-width:760px){
+.fbx-job{padding:22px 0 6px}
+.fbx-job-head{flex-direction:column;align-items:flex-start;gap:14px}
+.fbx-job-head h1{font-size:30px}
+.fbx-job-body{grid-template-columns:1fr;gap:24px}
+.fbx-job-stage{padding:12px;min-height:200px}
+.fbx-viewer{height:280px}
+.fbx-title-row{flex-direction:column}
+.fbx-title-row .fbx-input{max-width:none}
+.fbx-job-empty{padding:50px 0}
+.fbx-placeholder{min-height:120px}
+}

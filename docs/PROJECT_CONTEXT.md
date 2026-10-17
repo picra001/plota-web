@@ -32,7 +32,8 @@
 |---|---|---|
 | `/` → `/en` | 영어 | 스튜디오 소개, 독립 프로젝트 카드 |
 | `/en/fbx` | 영어 | FBX 서비스 입구, 제작 안내·대표 에셋·가이드 |
-| `/en/fbx/create` | 영어 | 프롬프트·플랫폼 선택·고정 샘플 결과 |
+| `/en/fbx/create` | 영어 | **실제 접수 화면.** 초대코드·그림 업로드·애니 클립 선택·동의 → `POST /jobs` |
+| `/en/fbx/job?id=` | 영어 | **실제 결과 화면.** 진행 상태 폴링·3D 미리보기·FBX 다운로드·제목 편집. 색인 제외(noindex), 사이트맵 제외 |
 | `/en/fbx/assets` | 영어 | 검색·카테고리·플랫폼 필터 |
 | `/en/fbx/assets/{slug}` | 영어 | 에셋 콘셉트·사양 목업·SVG 다운로드 |
 | `/en/fbx/guide` | 영어 | 플랫폼 가이드 입구 |
@@ -57,6 +58,12 @@ FBX 메뉴: Create / Asset library / Guides. 웹툰 메뉴: All series / Latest 
 
 ### 실제 동작
 
+- **FBX 제작(2026-10-12)**: `/en/fbx/create` 에서 그림 1장을 접수하고 `/en/fbx/job?id=` 에서 진행 상태와 결과 파일을 받는다.
+  서버는 같은 저장소의 `apps/fbx-api`(Cloudflare Worker + D1 + R2), 실제 변환은 집 PC 의 ComfyUI 워커(comfyui-docker 저장소)다.
+  초대코드 필요, 그림 10MB 이하(PNG·JPG·WEBP), Mixamo FBX 클립 업로드 가능(10MB·최대 4개).
+  작업당 수정 권한은 브라우저 localStorage 의 `owner_token`(`plota-fbx-tokens-v1`). 초대코드는 `plota-fbx-invite-v1` 에 기억한다.
+  3D 미리보기는 자체 호스팅 `public/vendor/model-viewer.min.js`(4.4.0, BSD-3-Clause) — CDN·npm 의존성 없음. GLB 를 못 읽으면 원본 그림으로 내려간다.
+
 - 에셋 이름 검색, 카테고리·플랫폼 필터, 빈 상태, 필터 초기화.
 - 6개 원본 SVG 콘셉트 파일 다운로드.
 - 제작 화면의 입력·플랫폼 선택과 고정 샘플 결과 표시.
@@ -69,7 +76,8 @@ FBX 메뉴: Create / Asset library / Guides. 웹툰 메뉴: All series / Latest 
 
 ### 목업 / 준비 중
 
-- AI 생성, 이미지 업로드, 실제 FBX 모델과 내보내기는 없다. 버튼과 문구에서 구분한다.
+- 에셋 라이브러리의 6개 콘셉트는 여전히 SVG 목업이다(실제 3D 모델 아님). FBX 제작 화면만 실제로 동작한다.
+- Roblox 반입은 지원하지 않는다. 현재 산출물은 OVERDARE Custom Skeleton 기준이다.
 - 에셋 플랫폼 표시는 의도한 타깃이다. 호환 테스트 완료나 인증을 의미하지 않는다. 폴리곤 수는 목업 수치다.
 - 웹툰은 새 이야기와 자체 SVG를 활용한 스토리보드다. 최종 컷 작업·업로드 에디터는 없다.
 - 회원·클라우드 동기화·방문자 업로드·댓글·외부 학습 AI는 구현하지 않았다.
@@ -79,6 +87,10 @@ FBX 메뉴: Create / Asset library / Guides. 웹툰 메뉴: All series / Latest 
 `package.json` 기준 Node >=22, pnpm 9.15.9, Next.js ^15.5.20, React ^19.2.7, TypeScript, Tailwind 3, gray-matter/js-yaml/next-mdx-remote.
 
 현재는 Next.js SSG이며 `output: export` 구성은 아니다. Cloudflare 설정은 OpenNext + Workers다. `wrangler.jsonc`의 엔트리는 `.open-next/worker.js`, 에셋은 `.open-next/assets`, Worker 이름은 `web`이다. 정적 콘텐츠 운영과 어댑터 런타임을 구분한다.
+
+`NEXT_PUBLIC_FBX_API_URL`은 FBX 제작 화면이 호출할 API 주소다. **빌드 시점에 번들로 들어간다** — 미설정 기본값 `https://fbx-api.plota.ai`.
+로컬 개발은 `NEXT_PUBLIC_FBX_API_URL=http://127.0.0.1:8787 pnpm dev` 와 `pnpm dev:api` 를 같이 띄운다.
+이때 Worker 의 `ALLOW_ORIGIN` 에 `http://localhost:3000` 을 함께 넣어야 CORS 가 통과한다(쉼표로 여러 개).
 
 `NEXT_PUBLIC_SITE_URL`은 SEO 절대 URL에 사용한다. 미설정 기본값은 `https://plota.dev`. `API_URL` rewrite는 과거 확장 설정이며 현재 백엔드 존재를 뜻하지 않는다. 배포 설정은 이번 개편에서 변경하지 않았다.
 
@@ -94,6 +106,10 @@ FBX 메뉴: Create / Asset library / Guides. 웹툰 메뉴: All series / Latest 
 | 서비스 경로·정적 생성·메타데이터 | `src/app/[lang]/(products)/[...product]/page.tsx` |
 | 서비스별 헤더·메뉴·중국어 하단 탭 | `src/components/product-shell.tsx` |
 | FBX·웹툰 페이지 화면 | `src/components/product-pages.tsx` |
+| FBX 접수 화면 | `src/components/fbx-create.tsx` |
+| FBX 결과·진행 화면 | `src/components/fbx-job.tsx` |
+| FBX API 클라이언트·클립 목록·단계 문구 | `src/lib/fbx-api.ts` |
+| FBX API 서버(별도 Worker) | `apps/fbx-api/` (자체 README) |
 | 필터·제작 데모·중국어 학습 및 저장 | `src/components/product-interactions.tsx` |
 | 에셋·작품·회차·중국어 표현 데이터 | `src/lib/mock-data.ts` |
 | WebMCP 공개 표현 검색·입력 검증 | `src/lib/chinese-tools.ts` |
@@ -188,4 +204,34 @@ node node_modules/next/dist/bin/next start -p 3000
 
 ## 11. WebMCP 진단 (2026-09-27)
 등록은 components/chinese-webmcp.tsx의 useChineseWebMcp에서 관리한다. 등록 실패 원인을 표시하고 선택 범위는 ref로 갱신하여 선택할 때마다 도구를 재등록하지 않는다. 회화 페이지의 WebMCP 연결 진단은 실제 document.modelContext.getTools/executeTool을 호출한다. JSON 객체 인수를 우선 사용하며, 이전 Chrome의 정확한 인수 파싱 오류에 한해서 읽기 전용 호출을 JSON 문자열로 재시도한다. 자체 진단 성공은 외부 AI 연결 성공과 다르다. 최근 호출은 자체 진단 중에는 기록하지 않으며, 호출자 신원은 판별하지 않는다. 상태는 메모리에만 유지한다.
-사용자 Chrome 확장으로 localhost:3003에서 진단 UI를 실행했다. 최초 객체 인수 호출은 Failed to parse input arguments로 실패했고 문자열 호환 경로에서는 도구 4개 조회, 19개 단어장, 1번 이름/번호의 49개 단어 일치, 검색 및 예문 검사가 통과했다. Chrome 확장에 WebMCP 전용 호출 인터페이스가 없어 외부 에이전트의 직접 도구 호출은 아직 검증하지 않았다. 이번 변경은 아직 배포하지 않았다.
+사용자 Chrome 확장으로 localhost:3003에서 진단 UI를 실행했다. 최초 객체 인수 호출은 Failed to parse input arguments로 실패했고 문자열 호환 경로에서는 도구 4개 조회, 19개 단어장, 1번 이름/번호의 49개 단어 일치, 검색 및 예문 검사가 통과했다. 진단 구현은 커밋 4097619로 배포했고 운영 사이트에서도 사용자 Chrome 자체 진단을 통과했다. 이후 Codex 내장 브라우저의 WebMCP capability로 운영 사이트 도구 4종을 직접 호출해 19개 단어장, 1번 49개 단어, 번호·이름 일치, 검색 및 예문 검사를 확인했다. 이 세션의 사용자 Chrome 확장에는 직접 호출 capability가 없었으며, 내장 브라우저 결과와 구분한다.
+
+
+## 12. WebMCP 구축·사용 문서
+
+- [WebMCP 구축 방법](WEBMCP_BUILD_GUIDE.md): 실제 소스 구성, 도구 계약, 등록·정리, Chrome 호환 진단, 배포와 검증.
+- [WebMCP 사용 방법](WEBMCP_USAGE_GUIDE.md): 사용자 요청 예시, 실제 에이전트 직접 호출 절차, Chrome 자체 진단, 연결 제한과 오류 해석.
+- 최신 WebMCP 상태는 위 문서와 11절을 우선한다. 앞 절의 초기 목업·미배포 기록은 작성 당시의 이력이다.
+
+## 13. FBX 제작 실동작 (P3, 2026-10-12)
+
+목업이던 `/en/fbx/create` 를 실제 접수 화면으로 바꾸고 결과 화면 `/en/fbx/job?id=` 을 더했다. 서버는 `apps/fbx-api`(P2).
+
+| 화면 | 하는 일 |
+|---|---|
+| `/en/fbx/create` | 초대코드, 그림 1장(PNG·JPG·WEBP ≤10MB), 애니 클립 선택(라이브러리 Walking·Salute + Mixamo FBX 업로드 ≤10MB·최대 4개), 공개 동의 → `POST /jobs` → 결과 페이지로 이동 |
+| `/en/fbx/job?id=` | 3초(2분 뒤 8초) 간격 폴링. `queued`(대기 순서) → `running`(단계·진행률 막대) → `done`(3D 미리보기·다운로드) / `failed`(사람 말 사유·다시 보내기). 워커가 꺼져 있으면 그 사실을 알린다 |
+
+- 주소 방식: 정적 생성을 유지하려고 **동적 라우트 대신 `?id=`** 를 쓴다. `productPaths` 에 `fbx/job` 하나만 추가했고 사이트맵에서는 뺐으며 메타데이터는 noindex 다.
+- 클립 이름 목록은 `src/lib/fbx-api.ts` 의 `LIBRARY_CLIPS`. 집 PC `serve_data/anims/` 에 클립을 추가하면 이 배열도 같이 늘린다.
+- 단계 문구(`STEP_LABELS`)는 워커의 step 값과 1:1 이다(`ovdr/server/README.md` §7). 워커 쪽 단계 이름을 바꾸면 여기도 바꾼다.
+- 3D 미리보기는 `public/vendor/model-viewer.min.js` 를 직접 담아 쓴다(출처·갱신법은 `public/vendor/README.md`). 외부 요청은 늘지 않았다 — 확인된 외부 요청은 기존 `globals.css` 의 Pretendard(jsdelivr) 하나뿐이다.
+
+### 검증 (2026-10-12, 로컬)
+
+- `tsc --noEmit` 통과, production build 성공 — 정적 페이지 **207개**(이전 202개 + `fbx/job` ×5 언어).
+- 실제 Worker(로컬 wrangler dev) + 실제 사이트(next start)로 Playwright 브라우저 검사 **42항목 전부 통과**:
+  접수 폼 검증·업로드·클립 선택 → 접수 → 대기 순서 → 진행 단계·막대 → 완료 → GLB 실제 로드 → FBX 실제 내려받기 →
+  제목 편집(보낸 브라우저만) → 남의 브라우저에서는 편집 숨김 → 없는 id·id 없음 안내 → 같은 그림 재접수 안내 →
+  실패 화면 → GLB 손상 시 그림으로 내려감 → 모바일 375px 가로 넘침 없음.
+- 아직 안 한 것: Cloudflare 배포본에서의 확인, 실제 GPU 변환 1건 관통(= P2 완료 기준), 다른 브라우저·실기기 확인.

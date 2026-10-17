@@ -1,0 +1,5 @@
+# 복사: cp .dev.vars.example .dev.vars   (wrangler dev 가 자동으로 읽는다. .dev.vars 는 커밋하지 않는다)
+# 배포본 시크릿은 이 파일이 아니라 `wrangler secret put` 으로 넣는다 — README §2
+WORKER_TOKEN="dev-worker-token"
+ADMIN_TOKEN="dev-admin-token"
+INVITE_CODES="plota2026,friend"

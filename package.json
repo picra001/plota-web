@@ -12,7 +12,10 @@
     "preview": "pnpm --filter @plota/web run preview",
     "deploy": "pnpm --filter @plota/web run deploy",
     "start": "pnpm --filter @plota/web start",
-    "lint": "pnpm --filter @plota/web lint"
+    "lint": "pnpm --filter @plota/web lint",
+    "dev:api": "pnpm --filter @plota/fbx-api dev",
+    "deploy:api": "pnpm --filter @plota/fbx-api deploy",
+    "typecheck:api": "pnpm --filter @plota/fbx-api typecheck"
   },
   "devDependencies": {
     "turbo": "^2.3.3"

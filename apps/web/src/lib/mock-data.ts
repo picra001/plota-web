@@ -27,4 +27,4 @@ export const phrases = [
   { id: "goodbye", chinese: "再见", pinyin: "Zàijiàn", meaning: "다음에 만나요", example: "明天见，再见！", translation: "내일 봐요, 안녕!", choices: ["좋은 아침이에요", "천만에요", "다음에 만나요"] },
   { id: "please", chinese: "请", pinyin: "Qǐng", meaning: "부탁합니다 / ~하세요", example: "请坐。", translation: "앉으세요.", choices: ["부탁합니다 / ~하세요", "맛있어요", "모르겠어요"] },
 ];
-export const productPaths = ["fbx", "fbx/create", "fbx/assets", "fbx/guide", "fbx/guide/roblox", "fbx/guide/overdare", ...assets.map(a => `fbx/assets/${a.slug}`), "webtoon", ...stories.flatMap(s => [`webtoon/${s.slug}`, ...s.episodes.map(e => `webtoon/${s.slug}/${e.slug}`)]), "chinese", "chinese/learn", "chinese/review", "chinese/settings", "chinese/conversation", "chinese/vocabulary"];
+export const productPaths = ["fbx", "fbx/create", "fbx/job", "fbx/assets", "fbx/guide", "fbx/guide/roblox", "fbx/guide/overdare", ...assets.map(a => `fbx/assets/${a.slug}`), "webtoon", ...stories.flatMap(s => [`webtoon/${s.slug}`, ...s.episodes.map(e => `webtoon/${s.slug}/${e.slug}`)]), "chinese", "chinese/learn", "chinese/review", "chinese/settings", "chinese/conversation", "chinese/vocabulary"];
