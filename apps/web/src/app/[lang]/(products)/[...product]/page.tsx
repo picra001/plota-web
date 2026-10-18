@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { assets, stories, productPaths } from "@/lib/mock-data";
+import { stories, productPaths } from "@/lib/mock-data";
 import { isLocale, uiLang, type UiLang } from "@/lib/i18n";
 import { absoluteUrl } from "@/lib/site";
 import { ProductShell } from "@/components/product-shell";
 import { ChineseApp } from "@/components/chinese-app";
-import { FbxHome, FbxCreate, FbxJob, FbxLibrary, AssetDetail, FbxGuide, WebtoonHome, WebtoonSeries, WebtoonReader } from "@/components/product-pages";
+import { FbxHome, FbxCreate, FbxJob, FbxLibrary, FbxGuide, WebtoonHome, WebtoonSeries, WebtoonReader } from "@/components/product-pages";
 
 export const dynamicParams = false;
 export function generateStaticParams() { return productPaths.map(path => ({ product: path.split("/") })); }
@@ -26,14 +26,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const lang = uiLang(locale);
   const path = product.join("/");
   const chinese = product[0] === "chinese";
-  const asset = product[1] === "assets" ? assets.find(a => a.slug === product[2]) : undefined;
   const story = product[0] === "webtoon" ? stories.find(s => s.slug === product[1]) : undefined;
   const episode = story?.episodes.find(e => e.slug === product[2]);
   const title = chinese ? CHINESE_TITLES[path] ?? "PLOTA"
     : episode ? `${episode.text[lang].title} / ${story!.text[lang].title}`
-    : asset?.text[lang].name ?? story?.text[lang].title ?? TITLES[lang][path] ?? "PLOTA";
+    : story?.text[lang].title ?? TITLES[lang][path] ?? "PLOTA";
   const description = chinese ? "세 PDF를 합친 HSK 1–4급 단어장. 단어 퀴즈와 복습, 단어장 이름과 번호로 시작하는 WebMCP 회화 학습."
-    : asset?.text[lang].description ?? story?.text[lang].description ?? DESCRIPTIONS[lang][product[0] === "webtoon" ? "webtoon" : "fbx"];
+    : story?.text[lang].description ?? DESCRIPTIONS[lang][product[0] === "webtoon" ? "webtoon" : "fbx"];
   // 제품 페이지는 한국어(기본)·영어 두 벌. 중국어 학습은 한국어 전용.
   const canonLang = chinese ? "ko" : lang;
   const canonical = `/${canonLang}/${path}`;
@@ -55,8 +54,7 @@ export default async function ProductPage({ params }: Props) {
     else if (section === "create") page = <FbxCreate lang={lang} />;
     else if (section === "job") page = <FbxJob />;
     else if (section === "guide") page = <FbxGuide lang={lang} />;
-    else if (!slug) page = <FbxLibrary lang={lang} />;
-    else { const asset = assets.find(a => a.slug === slug); if (!asset) notFound(); page = <AssetDetail asset={asset} lang={lang} />; }
+    else page = <FbxLibrary lang={lang} />;
   } else if (kind === "webtoon") {
     if (!section) page = <WebtoonHome lang={lang} />;
     else { const story = stories.find(s => s.slug === section); if (!story) notFound(); if (!slug) page = <WebtoonSeries story={story} lang={lang} />; else { const episode = story.episodes.find(e => e.slug === slug); if (!episode) notFound(); page = <WebtoonReader story={story} episode={episode} lang={lang} />; } }

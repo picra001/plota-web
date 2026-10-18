@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "@/components/localized-link";
 import { AssetArt, StoryArt } from "@/components/product-art";
-import { assets } from "@/lib/mock-data";
+import { heroArt } from "@/lib/mock-data";
 import { absoluteUrl } from "@/lib/site";
 import { uiLang, type UiLang } from "@/lib/i18n";
 
@@ -21,5 +21,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function HomePage({ params }: Props) {
   const lang = uiLang((await params).lang);
   const t = HUB[lang];
-  return <div className="hub-body" lang={lang}><section className="hub-hero"><h1>PLOTA</h1></section><section className="project-grid" aria-label={t.label}><Link className="project-card" href="/ko/fbx"><div className="project-meta"><span>01 / CREATE</span></div><div className="project-visual"><AssetArt asset={assets[0]} /></div><h2>FBX Studio</h2><p>{t.fbx}</p><span className="text-link">{t.fbxLink}</span></Link><Link className="project-card" href="/ko/webtoon"><div className="project-meta"><span>02 / READ</span></div><div className="project-visual"><StoryArt title="" /></div><h2>PLOTA Stories</h2><p>{t.webtoon}</p><span className="text-link">{t.webtoonLink}</span></Link><Link className="project-card" href="/ko/chinese"><div className="project-meta"><span>03 / LEARN</span></div><div className="project-visual chinese-visual"><strong lang="zh-Hans">你好。</strong><span>Nǐ hǎo</span></div><h2>한마디 Chinese</h2><p>{t.chinese}</p><span className="text-link">{t.chineseLink}</span></Link></section></div>;
+  return <div className="hub-body" lang={lang}><section className="hub-hero"><h1>PLOTA</h1></section><section className="project-grid" aria-label={t.label}><Link className="project-card" href="/ko/fbx"><div className="project-meta"><span>01 / CREATE</span></div><div className="project-visual"><AssetArt asset={heroArt} /></div><h2>FBX Studio</h2><p>{t.fbx}</p><span className="text-link">{t.fbxLink}</span></Link><Link className="project-card" href="/ko/webtoon"><div className="project-meta"><span>02 / READ</span></div><div className="project-visual"><StoryArt title="" /></div><h2>PLOTA Stories</h2><p>{t.webtoon}</p><span className="text-link">{t.webtoonLink}</span></Link><Link className="project-card" href="/ko/chinese"><div className="project-meta"><span>03 / LEARN</span></div><div className="project-visual chinese-visual"><strong lang="zh-Hans">你好。</strong><span>Nǐ hǎo</span></div><h2>한마디 Chinese</h2><p>{t.chinese}</p><span className="text-link">{t.chineseLink}</span></Link></section></div>;
 }

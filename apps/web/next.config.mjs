@@ -12,6 +12,8 @@ const nextConfig = {
       { source: "/", destination: "/ko", permanent: false },
       { source: "/fbx/:path*", destination: "/ko/fbx/:path*", permanent: false },
       { source: "/webtoon/:path*", destination: "/ko/webtoon/:path*", permanent: false },
+      // 컨셉 에셋 상세 페이지는 없앴다
+      { source: "/:lang(en|ko|ja|zh|es)/fbx/assets/:slug", destination: "/:lang/fbx/assets", permanent: true },
       // 플랫폼별 가이드(roblox/overdare)는 하나로 합쳤다
       { source: "/:lang(en|ko|ja|zh|es)/fbx/guide/:platform", destination: "/:lang/fbx/guide", permanent: true },
       { source: "/chinese/:path*", destination: "/ko/chinese/:path*", permanent: false },

@@ -4,18 +4,20 @@ import { useCallback, useEffect, useState } from "react";
 import Link, { useUiLang } from "./localized-link";
 import { FbxApiError, forgetJob, getJob, inputImageUrl, listPublicJobs, myJobIds, type Job } from "@/lib/fbx-api";
 
-const MY_LIMIT = 12;
+const PAGE_SIZE = 12;
 
 const COPY = {
   ko: {
     status: { queued: "대기 중", running: "진행 중", done: "완료", failed: "중단됨" }, untitled: "이름 없는 캐릭터",
     mine: "내 작품", sendMore: "새 그림 보내기", community: "모두의 작품", loadFail: "목록을 불러오지 못했습니다.",
     empty: "아직 공개된 작품이 없습니다.", loading: "불러오는 중…", more: "더 보기", date: "ko-KR",
+    sort: "정렬", newest: "최신순", oldest: "오래된순", prev: "이전", next: "다음", pages: "페이지",
   },
   en: {
     status: { queued: "In the queue", running: "In progress", done: "Finished", failed: "Stopped" }, untitled: "Untitled character",
     mine: "Your creations", sendMore: "Send another drawing", community: "Community creations", loadFail: "Could not load the creations.",
     empty: "Nothing shared yet.", loading: "Loading…", more: "Show more", date: "en",
+    sort: "Sort", newest: "Newest first", oldest: "Oldest first", prev: "Previous", next: "Next", pages: "Pages",
   },
 };
 
@@ -26,7 +28,7 @@ function jobImage(job: Job): string {
 function JobCard({ job, showStatus }: { job: Job; showStatus?: boolean }) {
   const t = COPY[useUiLang()];
   const [broken, setBroken] = useState(false);
-  const date = new Date(job.finished_at || job.created_at).toLocaleDateString(t.date, { month: "short", day: "numeric" });
+  const date = new Date(job.finished_at || job.created_at).toLocaleString(t.date, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   return (
     <Link className="asset-card" href={`/ko/fbx/job?id=${encodeURIComponent(job.id)}`}>
       <div className="asset-card-image fbx-card-image">
@@ -43,10 +45,12 @@ function JobCard({ job, showStatus }: { job: Job; showStatus?: boolean }) {
   );
 }
 
-/** 이 브라우저에서 접수한 작업(편집 키가 있는 것). 비공개 작업도 여기에는 보인다. */
+/** 이 브라우저에서 접수한 작업(편집 키가 있는 것). 비공개 작업도 여기에는 보인다. 접수 시각순 정렬, 12개씩 쪽 나눔. */
 function MyCreations() {
   const t = COPY[useUiLang()];
   const [jobs, setJobs] = useState<Job[] | null>(null);
+  const [newest, setNewest] = useState(true);
+  const [page, setPage] = useState(0);
   useEffect(() => {
     const ids = myJobIds();
     if (!ids.length) { setJobs([]); return; }
@@ -59,19 +63,37 @@ function MyCreations() {
         return null;
       }
     })).then(list => {
-      if (!alive) return;
-      setJobs(list.filter((j): j is Job => Boolean(j)).sort((a, b) => b.created_at - a.created_at).slice(0, MY_LIMIT));
+      if (alive) setJobs(list.filter((j): j is Job => Boolean(j)));
     });
     return () => { alive = false; };
   }, []);
   if (!jobs || !jobs.length) return null;
+  const sorted = [...jobs].sort((a, b) => newest ? b.created_at - a.created_at : a.created_at - b.created_at);
+  const pageCount = Math.ceil(sorted.length / PAGE_SIZE);
+  const current = Math.min(page, pageCount - 1);
+  const shown = sorted.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE);
   return (
     <section className="section-block">
       <div className="section-heading">
         <h2>{t.mine}</h2>
-        <Link className="text-link" href="/ko/fbx/create">{t.sendMore}</Link>
+        <div className="fbx-list-tools">
+          <select aria-label={t.sort} value={newest ? "new" : "old"} onChange={e => { setNewest(e.target.value === "new"); setPage(0); }}>
+            <option value="new">{t.newest}</option>
+            <option value="old">{t.oldest}</option>
+          </select>
+          <Link className="text-link" href="/ko/fbx/create">{t.sendMore}</Link>
+        </div>
       </div>
-      <div className="asset-grid">{jobs.map(j => <JobCard key={j.id} job={j} showStatus />)}</div>
+      <div className="asset-grid">{shown.map(j => <JobCard key={j.id} job={j} showStatus />)}</div>
+      {pageCount > 1 && (
+        <nav className="fbx-pager" aria-label={t.pages}>
+          <button className="filter" disabled={current === 0} onClick={() => setPage(current - 1)}>{t.prev}</button>
+          {Array.from({ length: pageCount }, (_, i) => (
+            <button key={i} className={i === current ? "filter active" : "filter"} aria-current={i === current ? "page" : undefined} onClick={() => setPage(i)}>{i + 1}</button>
+          ))}
+          <button className="filter" disabled={current === pageCount - 1} onClick={() => setPage(current + 1)}>{t.next}</button>
+        </nav>
+      )}
     </section>
   );
 }

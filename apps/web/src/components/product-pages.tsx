@@ -1,8 +1,7 @@
 import Link from "./localized-link";
-import { assets, categoryLabel, stories, type Asset, type Story } from "@/lib/mock-data";
+import { heroArt, stories, type Story } from "@/lib/mock-data";
 import type { UiLang } from "@/lib/i18n";
 import { AssetArt, StoryArt } from "./product-art";
-import { AssetLibrary } from "./product-interactions";
 import { FbxCreateApp } from "./fbx-create";
 import { FbxJobView } from "./fbx-job";
 import { FbxGallery } from "./fbx-gallery";
@@ -17,7 +16,7 @@ const HOME = {
 
 export function FbxHome({ lang }: { lang: UiLang }) {
   const t = HOME[lang];
-  return <div className="product-container"><section className="fbx-hero"><div className="hero-copy"><h1>FBX Studio</h1><p className="hero-description">{t.lede}</p><div className="button-row"><Link className="button primary" href="/ko/fbx/create">{t.create}</Link><Link className="button outline" href="/ko/fbx/assets">{t.assets}</Link></div></div><div className="hero-workbench"><div className="workbench-top"><span>FBX STUDIO</span><span>001</span></div><div className="workbench-grid"><div className="sketch-note"><span>01</span><svg viewBox="0 0 120 130" aria-hidden="true"><g fill="none" stroke="currentColor" strokeWidth="2"><path d="m28 23 62-2 4 43-68-1zm8 44 47 3 4 41-53-2zM50 37v7m25-7v7M48 53h27M35 111l-2 15m48-15 4 15M30 72l-12 26m71-23 15 23" /></g></svg><span>{t.note}</span></div><AssetArt asset={assets[0]} className="hero-bot" /></div><div className="workbench-bottom"><span>SKETCH  SHAPE  PLAY</span></div></div></section><section className="feature-band">{t.steps.map(([title, text], i) => <div key={title}><span>0{i + 1}</span><strong>{title}</strong><p>{text}</p></div>)}</section><section className="callout"><div><h2>{t.guideTitle}</h2><p>{t.guideText}</p></div><Link className="button outline" href="/ko/fbx/guide">{t.guide}</Link></section></div>;
+  return <div className="product-container"><section className="fbx-hero"><div className="hero-copy"><h1>FBX Studio</h1><p className="hero-description">{t.lede}</p><div className="button-row"><Link className="button primary" href="/ko/fbx/create">{t.create}</Link><Link className="button outline" href="/ko/fbx/assets">{t.assets}</Link></div></div><div className="hero-workbench"><div className="workbench-top"><span>FBX STUDIO</span><span>001</span></div><div className="workbench-grid"><div className="sketch-note"><span>01</span><svg viewBox="0 0 120 130" aria-hidden="true"><g fill="none" stroke="currentColor" strokeWidth="2"><path d="m28 23 62-2 4 43-68-1zm8 44 47 3 4 41-53-2zM50 37v7m25-7v7M48 53h27M35 111l-2 15m48-15 4 15M30 72l-12 26m71-23 15 23" /></g></svg><span>{t.note}</span></div><AssetArt asset={heroArt} className="hero-bot" /></div><div className="workbench-bottom"><span>SKETCH  SHAPE  PLAY</span></div></div></section><section className="feature-band">{t.steps.map(([title, text], i) => <div key={title}><span>0{i + 1}</span><strong>{title}</strong><p>{text}</p></div>)}</section><section className="callout"><div><h2>{t.guideTitle}</h2><p>{t.guideText}</p></div><Link className="button outline" href="/ko/fbx/guide">{t.guide}</Link></section></div>;
 }
 
 export function FbxCreate({ lang }: { lang: UiLang }) {
@@ -28,14 +27,7 @@ export function FbxCreate({ lang }: { lang: UiLang }) {
 export function FbxJob() { return <div className="product-container"><FbxJobView /></div>; }
 
 export function FbxLibrary({ lang }: { lang: UiLang }) {
-  const t = lang === "ko" ? { title: "에셋", concepts: "컨셉 모음" } : { title: "Assets", concepts: "Concept collection" };
-  return <div className="product-container"><div className="page-heading"><h1>{t.title}</h1></div><FbxGallery /><section className="section-block"><div className="section-heading"><h2>{t.concepts}</h2></div><AssetLibrary /></section></div>;
-}
-
-export function AssetDetail({ asset, lang }: { asset: Asset; lang: UiLang }) {
-  const t = asset.text[lang];
-  const l = lang === "ko" ? { back: "에셋", category: "분류", faces: "면 수", download: "컨셉 그림 받기 (SVG)" } : { back: "Assets", category: "Category", faces: "Faces", download: "Download concept art (SVG)" };
-  return <div className="product-container"><Link className="back-link" href="/ko/fbx/assets">← {l.back}</Link><section className="asset-detail"><div className="detail-art" style={{ background: `${asset.color}35` }}><span className="art-corner">CONCEPT {String(assets.indexOf(asset) + 1).padStart(2, "0")}</span><AssetArt asset={asset} label={t.name} /></div><div className="detail-copy"><h1>{t.name}</h1><p className="hero-description">{t.description}</p><div className="asset-specs"><div><span>{l.category}</span><strong>{categoryLabel[lang][asset.category]}</strong></div><div><span>{l.faces}</span><strong>{asset.faces}</strong></div></div><a className="button outline wide" href={`/downloads/${asset.slug}-concept.svg`} download>{l.download}</a></div></section></div>;
+  return <div className="product-container"><div className="page-heading"><h1>{lang === "ko" ? "에셋" : "Assets"}</h1></div><FbxGallery /></div>;
 }
 
 export function FbxGuide({ lang }: { lang: UiLang }) { return <FbxGuideView lang={lang} />; }

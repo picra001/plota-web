@@ -1,36 +1,9 @@
 import type { UiLang } from "./i18n";
 
 /** Editorial mock content. 문구는 한국어·영어 두 벌. */
-export type AssetCategory = "characters" | "buildings" | "nature" | "props";
-export const assetCategories: AssetCategory[] = ["characters", "buildings", "nature", "props"];
-export const categoryLabel: Record<UiLang, Record<AssetCategory | "all", string>> = {
-  ko: { all: "전체", characters: "캐릭터", buildings: "건물", nature: "자연", props: "소품" },
-  en: { all: "All", characters: "Characters", buildings: "Buildings", nature: "Nature", props: "Props" },
-};
-export type Asset = {
-  slug: string; category: AssetCategory; color: string; shape: "robot" | "tree" | "house" | "sword"; faces: string;
-  text: Record<UiLang, { name: string; description: string }>;
-};
-export const assets: Asset[] = [
-  { slug: "scout-bot", category: "characters", color: "#a5ba8a", shape: "robot", faces: "1.2k", text: {
-    ko: { name: "정찰 로봇", description: "모험심만큼은 누구보다 큰 작은 탐험가." },
-    en: { name: "Scout Bot", description: "A small explorer with a very big sense of adventure." } } },
-  { slug: "mosswood-cabin", category: "buildings", color: "#d2ac84", shape: "house", faces: "840", text: {
-    ko: { name: "이끼숲 오두막", description: "숲 가장자리의 조용한 쉼터." },
-    en: { name: "Mosswood Cabin", description: "A quiet hideaway at the edge of the forest." } } },
-  { slug: "cloud-pine", category: "nature", color: "#8ba894", shape: "tree", faces: "320", text: {
-    ko: { name: "구름 소나무", description: "부드러운 모양과 작은 그늘." },
-    en: { name: "Cloud Pine", description: "Soft shapes and a little shade." } } },
-  { slug: "sunblade", category: "props", color: "#e6bd65", shape: "sword", faces: "460", text: {
-    ko: { name: "햇빛 검", description: "뜻밖의 영웅을 위한 작고 빛나는 유물." },
-    en: { name: "Sunblade", description: "A bright little relic for an unlikely hero." } } },
-  { slug: "courier-bot", category: "characters", color: "#c6a1ad", shape: "robot", faces: "1.4k", text: {
-    ko: { name: "배달 로봇", description: "어디든 찾아가는 친근한 동료." },
-    en: { name: "Courier Bot", description: "A friendly companion that delivers anywhere." } } },
-  { slug: "cedar-house", category: "buildings", color: "#9eafc4", shape: "house", faces: "920", text: {
-    ko: { name: "삼나무 집", description: "작은 집 하나, 수많은 이야기." },
-    en: { name: "Cedar House", description: "One small house. A thousand possible stories." } } },
-];
+
+/** FBX Studio·허브의 장식 그림 */
+export const heroArt = { shape: "robot", color: "#a5ba8a" } as const;
 
 type StoryText = { title: string; genre: string; subtitle: string; description: string };
 type EpisodeText = { title: string; lines: string[] };
@@ -70,4 +43,4 @@ export const phrases = [
   { id: "goodbye", chinese: "再见", pinyin: "Zàijiàn", meaning: "다음에 만나요", example: "明天见，再见！", translation: "내일 봐요, 안녕!", choices: ["좋은 아침이에요", "천만에요", "다음에 만나요"] },
   { id: "please", chinese: "请", pinyin: "Qǐng", meaning: "부탁합니다 / ~하세요", example: "请坐。", translation: "앉으세요.", choices: ["부탁합니다 / ~하세요", "맛있어요", "모르겠어요"] },
 ];
-export const productPaths = ["fbx", "fbx/create", "fbx/job", "fbx/assets", "fbx/guide", ...assets.map(a => `fbx/assets/${a.slug}`), "webtoon", ...stories.flatMap(s => [`webtoon/${s.slug}`, ...s.episodes.map(e => `webtoon/${s.slug}/${e.slug}`)]), "chinese", "chinese/learn", "chinese/review", "chinese/settings", "chinese/conversation", "chinese/vocabulary"];
+export const productPaths = ["fbx", "fbx/create", "fbx/job", "fbx/assets", "fbx/guide", "webtoon", ...stories.flatMap(s => [`webtoon/${s.slug}`, ...s.episodes.map(e => `webtoon/${s.slug}/${e.slug}`)]), "chinese", "chinese/learn", "chinese/review", "chinese/settings", "chinese/conversation", "chinese/vocabulary"];
