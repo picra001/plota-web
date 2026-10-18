@@ -31,7 +31,7 @@
 	},
 	"vars": {
 		"ASSETS_BASE": "https://assets.plota.ai",
-		"ALLOW_ORIGIN": "https://plota.ai",
+		"ALLOW_ORIGIN": "https://plota.ai,https://www.plota.ai",
 		"QUEUE_MAX": "5",
 		"WORKER_ONLINE_SEC": "90",
 		"LEASE_LOST_SEC": "900",

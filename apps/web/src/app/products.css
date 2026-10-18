@@ -33,6 +33,7 @@
 .fbx-error{border:1px solid #d8a6a0;background:#fdeeec;color:#7b2f26;font-size:12px;line-height:1.7;padding:12px 14px;border-radius:5px;margin:18px 0 0}
 .fbx-drawing-preview{display:block;width:100%;max-height:330px;object-fit:contain;border-radius:3px}
 .fbx-placeholder{min-height:220px;border:1px dashed var(--line);border-radius:3px}
+.fbx-card-image{background:var(--surface-2)}.fbx-card-thumb{display:block;width:100%;aspect-ratio:1;object-fit:contain;padding:34px 18px 10px}div.fbx-card-thumb{padding:0}.fbx-more{margin-top:26px}
 .fbx-viewer{display:block;width:100%;height:360px;background:#e5eadd;border-radius:3px;--poster-color:#e5eadd}
 .fbx-progress-track{height:6px;background:var(--line);border-radius:999px;overflow:hidden}
 .fbx-progress-fill{height:100%;background:var(--accent);border-radius:999px;transition:width .4s ease}

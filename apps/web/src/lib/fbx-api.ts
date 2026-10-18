@@ -113,6 +113,13 @@ export async function patchJob(id: string, token: string, patch: { title?: strin
   });
 }
 
+/** 완료·공개 작업 목록(최근 완료 순). 다음 쪽은 next_cursor 로. 서버 60초 캐시. */
+export async function listPublicJobs(cursor?: number | null, limit = 12): Promise<{ items: Job[]; next_cursor: number | null }> {
+  const q = new URLSearchParams({ public: "1", limit: String(limit) });
+  if (cursor) q.set("cursor", String(cursor));
+  return request<{ items: Job[]; next_cursor: number | null }>(`/jobs?${q}`);
+}
+
 export async function getHealth(): Promise<{ ok: boolean; worker_online: boolean }> {
 	return request<{ ok: boolean; worker_online: boolean }>("/health");
 }
@@ -153,6 +160,17 @@ export function jobToken(id: string): string | null {
 
 export function myJobIds(): string[] {
   return Object.keys(readTokens());
+}
+
+/** 서버에서 지워진(404) 작업은 목록에서 뺀다. 편집 키만 사라지고 다른 것은 영향 없음. */
+export function forgetJob(id: string): void {
+  try {
+    const all = readTokens();
+    delete all[id];
+    window.localStorage.setItem(TOKEN_KEY, JSON.stringify(all));
+  } catch {
+    /* 무시 */
+  }
 }
 
 export function rememberInvite(code: string): void {
