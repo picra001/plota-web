@@ -16,6 +16,17 @@ export const MAX_CLIPS = 4;
 
 export type JobStatus = "queued" | "running" | "done" | "failed";
 
+/** 만들 것의 종류. character 외에는 뼈대·애니메이션이 없는 FBX. 값 범위는 apps/fbx-api KIND_OPTIONS 와 같게. */
+export type Kind = "character" | "static" | "mech" | "ground";
+export const KINDS: Kind[] = ["character", "static", "mech", "ground"];
+export type KindOptions = { height_cm?: number; split?: number; front?: "viewer" | "left" | "right"; size_cm?: number; uv_repeat?: number };
+export const KIND_DEFAULTS: Record<Exclude<Kind, "character">, KindOptions> = {
+  static: { height_cm: 120 },
+  mech: { height_cm: 200, split: 0.5, front: "viewer" },
+  ground: { size_cm: 2000, uv_repeat: 1 },
+};
+export const OPTION_RANGES = { height_cm: [10, 2000], size_cm: [100, 2040], uv_repeat: [1, 16] } as const;
+
 export type Job = {
   id: string;
   status: JobStatus;
@@ -30,6 +41,8 @@ export type Job = {
   public: boolean;
   input_url: string;
   files: Record<string, string>;
+  kind?: Kind;
+  options?: KindOptions | null;
   anim_request: { anims?: string[]; default?: string } | null;
   anim_default: string | null;
   body_type: string | null;
@@ -83,6 +96,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export type SubmitInput = {
   invite: string;
   image: File;
+  kind?: Kind;
+  options?: KindOptions;
   /** 라이브러리 클립 이름. 비면 서버 기본값(Walking) */
   clips: string[];
   defaultClip?: string;
@@ -97,6 +112,12 @@ export async function submitJob(input: SubmitInput): Promise<SubmitResult> {
   form.set("consent", "1");
   form.set("public", input.isPublic ? "1" : "0");
   form.set("image", input.image, input.image.name || "drawing.png");
+  const kind = input.kind ?? "character";
+  form.set("kind", kind);
+  if (kind !== "character") {
+    form.set("options", JSON.stringify(input.options ?? {}));
+    return request<SubmitResult>("/jobs", { method: "POST", body: form });
+  }
   const names = [...input.clips];
   for (const u of input.uploads ?? []) if (!names.includes(u.name)) names.push(u.name);
   if (names.length) {
@@ -203,11 +224,11 @@ export function savedInvite(): string {
 const STEP_LABELS: Record<UiLang, Record<string, string>> = {
   ko: {
     claim: "시작하는 중", input: "그림 준비 중", build: "3D 모양 만드는 중", mesh_check: "메시 점검 중", rerig: "뼈대 맞추는 중",
-    finalize: "엔진용으로 정리 중", convert: "축 변환 중", anim: "애니메이션 붙이는 중", upload: "파일 올리는 중", done: "완료", failed: "중단됨",
+    finalize: "엔진용으로 정리 중", convert: "축 변환 중", anim: "애니메이션 붙이는 중", export: "FBX로 정리하는 중", upload: "파일 올리는 중", done: "완료", failed: "중단됨",
   },
   en: {
     claim: "Getting started", input: "Preparing your drawing", build: "Building the 3D shape", mesh_check: "Checking the mesh", rerig: "Fitting the skeleton",
-    finalize: "Preparing it for the engine", convert: "Converting the axes", anim: "Adding the animation", upload: "Uploading your files", done: "Finished", failed: "Stopped",
+    finalize: "Preparing it for the engine", convert: "Converting the axes", anim: "Adding the animation", export: "Writing the FBX", upload: "Uploading your files", done: "Finished", failed: "Stopped",
   },
 };
 
@@ -216,13 +237,15 @@ export function stepLabel(job: Pick<Job, "status" | "step">, lang: UiLang): stri
   return (job.step && STEP_LABELS[lang][job.step]) || (lang === "ko" ? "처리 중" : "Working on it");
 }
 
-/** 결과 파일 이름 → 내려받기 버튼 문구. anims/<클립>_ovdr.fbx 는 클립 이름으로. */
+/** 결과 파일 이름 → 내려받기 버튼 문구. anims/<클립>_ovdr.fbx 는 클립 이름으로, parts/ 는 장치 부품. */
 export function fileLabel(name: string, lang: UiLang): string {
   const ko = lang === "ko";
   if (name === "final.fbx") return ko ? "FBX" : "FBX";
   if (name === "preview.glb") return ko ? "GLB 미리보기" : "GLB preview";
   if (name === "preview.png") return ko ? "원본 그림" : "Source image";
   if (name === "thumb.webp") return ko ? "썸네일" : "Thumbnail";
+  if (name === "parts/top.fbx") return ko ? "윗부분 FBX (움직이는 부품)" : "Top part FBX (moving)";
+  if (name === "parts/base.fbx") return ko ? "받침 FBX (고정 부품)" : "Base part FBX (fixed)";
   const clip = /^anims\/(.+)_ovdr\.fbx$/.exec(name);
   if (clip) return ko ? `${clip[1]} 클립 (FBX)` : `${clip[1]} clip (FBX)`;
   return name;
@@ -240,4 +263,15 @@ export function elapsed(from: number, to: number): string {
   if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);
   return `${m}m ${String(s % 60).padStart(2, "0")}s`;
+}
+
+/** 종류 이름 (화면 표시용) */
+export function kindLabel(kind: Kind | undefined, lang: UiLang): string {
+  const ko = lang === "ko";
+  switch (kind ?? "character") {
+    case "static": return ko ? "정적 물체" : "Static object";
+    case "mech": return ko ? "움직이는 장치" : "Mechanism";
+    case "ground": return ko ? "바닥" : "Ground";
+    default: return ko ? "캐릭터" : "Character";
+  }
 }

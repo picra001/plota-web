@@ -5,8 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { isLocale } from "@/lib/i18n";
 import { useUiLang } from "./localized-link";
 import {
-  DEFAULT_CLIP, LIBRARY_CLIPS, MAX_CLIPS, MAX_CLIP_BYTES, MAX_IMAGE_BYTES,
+  DEFAULT_CLIP, KIND_DEFAULTS, KINDS, LIBRARY_CLIPS, MAX_CLIPS, MAX_CLIP_BYTES, MAX_IMAGE_BYTES, OPTION_RANGES,
   FbxApiError, getHealth, rememberInvite, rememberJob, savedInvite, submitJob,
+  type Kind, type KindOptions,
 } from "@/lib/fbx-api";
 
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -25,27 +26,61 @@ const COPY = {
     badType: "PNG, JPG, WEBP 이미지만 올릴 수 있습니다.", tooBig: (mb: number) => `이미지는 ${mb}MB 이하여야 합니다.`,
     badClip: "애니메이션 클립은 Mixamo FBX 파일이어야 합니다.", clipBig: (n: string, mb: number) => `${n} 파일이 ${mb}MB 를 넘습니다.`,
     maxClips: (n: number) => `클립은 최대 ${n}개까지 고를 수 있습니다.`, failed: "문제가 생겼습니다. 다시 시도해 주세요.",
-    s1: "01 / 그림", invite: "초대 코드", invitePh: "받은 코드를 입력하세요", drawing: "그림",
+    s0: "01 / 무엇을 만들까요", kindLegend: "만들 것",
+    kinds: {
+      character: { name: "캐릭터", desc: "뼈대와 애니메이션이 들어간 인물·동물. Mixamo 동작을 붙입니다.", tip: "캐릭터 한 명이 정면을 보고 팔을 몸에서 뗀 그림이 좋습니다." },
+      static: { name: "정적 물체", desc: "나무, 테이블, 상자처럼 놓아두는 물체. 뼈대 없는 FBX 1개.", tip: "물체 하나만, 비스듬한 각도에서 형태가 잘 보이는 그림이 좋습니다." },
+      mech: { name: "움직이는 장치", desc: "포탑처럼 윗부분이 회전축으로 따로 움직이는 장치. 받침·윗부분 FBX 2개.", tip: "측면이나 정면에서 받침과 윗부분의 경계가 수평으로 보이는 그림이 좋습니다." },
+      ground: { name: "바닥", desc: "바닥 무늬 그림을 평평한 바닥 판 FBX로. 1분 안쪽.", tip: "위에서 내려다본 바닥 무늬 그림. 가운데 정사각형을 씁니다." },
+    } as Record<Kind, { name: string; desc: string; tip: string }>,
+    s1: "02 / 그림", invite: "초대 코드", invitePh: "받은 코드를 입력하세요", drawing: "그림",
     drop: "PNG·JPG·WEBP 파일을 끌어다 놓거나 고르세요. 10MB 이하.", choose: "파일 고르기", chooseAgain: "다른 파일 고르기",
-    s2: "02 / 애니메이션", clips: "넣을 동작", yours: "내 파일", remove: "빼기", addClip: "Mixamo FBX 클립 추가",
+    s2: "03 / 애니메이션", clips: "넣을 동작", yours: "내 파일", remove: "빼기", addClip: "Mixamo FBX 클립 추가",
     mainClip: "메인 FBX에 넣을 동작", clipNote: (n: number) => `Mixamo 에서 FBX Binary · With Skin · 30fps 로 받아 주세요. 최대 ${n}개.`,
-    s3: "03 / 보내기 전에", consent: "내가 권리를 가진 그림이며, 그림과 결과가 링크를 아는 누구나 볼 수 있는 페이지에 올라가는 데 동의합니다.",
+    s2opt: "03 / 크기와 설정",
+    height: "높이 (cm)", heightNote: "스튜디오에 들어갔을 때의 전체 높이. 비워 두면 기본값.",
+    mechHeight: "전체 높이 (cm)", split: "자르는 높이", splitNote: "오른쪽 그림의 선을 끌어 받침과 윗부분의 경계에 맞추세요. 윗부분은 이 높이를 회전축으로 돕니다.",
+    splitValue: (p: number) => `위에서 ${p}%`, front: "그림 속 장치가 바라보는 쪽", fronts: { viewer: "나를 봄 (정면)", left: "왼쪽", right: "오른쪽" },
+    size: "바닥 한 변 (cm)", sizeNote: "최대 2040cm. 넓은 바닥은 여러 장을 이어 붙이세요.", repeat: "무늬 반복 횟수", repeatNote: "타일 무늬면 4~8, 한 장 그림이면 1.",
+    s3: (k: Kind) => (k === "character" ? "04 / 보내기 전에" : "04 / 보내기 전에"),
+    consent: "내가 권리를 가진 그림이며, 그림과 결과가 링크를 아는 누구나 볼 수 있는 페이지에 올라가는 데 동의합니다.",
     sending: "보내는 중…", send: "그림 보내기", offline: "지금은 작업실 PC가 꺼져 있습니다. 대기열에 올려 두면 켜지는 대로 처리합니다.",
-    preview: "고른 그림", previewAlt: "고른 그림", ready: "보낼 준비 완료", empty: "그림 한 장이면 됩니다", time: "시작 후 약 4~10분 걸립니다.",
+    preview: "고른 그림", previewAlt: "고른 그림", ready: "보낼 준비 완료", empty: "그림 한 장이면 됩니다",
+    time: (k: Kind) => (k === "ground" ? "시작 후 1분 안쪽입니다." : k === "mech" ? "부품 2개를 만들어 시작 후 약 10~15분 걸립니다." : "시작 후 약 4~10분 걸립니다."),
+    splitHandle: "자르는 선 (위·아래 화살표로 움직임)",
   },
   en: {
     badType: "Please choose a PNG, JPG, or WEBP image.", tooBig: (mb: number) => `The image is larger than ${mb} MB.`,
     badClip: "Animation clips must be FBX files from Mixamo.", clipBig: (n: string, mb: number) => `${n} is larger than ${mb} MB.`,
     maxClips: (n: number) => `You can request up to ${n} clips.`, failed: "Something went wrong. Please try again.",
-    s1: "01 / DRAWING", invite: "Invite code", invitePh: "Enter the code you were given", drawing: "Drawing",
+    s0: "01 / WHAT TO MAKE", kindLegend: "Type",
+    kinds: {
+      character: { name: "Character", desc: "A person or creature with a skeleton and animation. Mixamo clips are added.", tip: "One character facing forward, arms away from the body." },
+      static: { name: "Static object", desc: "Something that stays put: a tree, a table, a crate. One FBX, no skeleton.", tip: "One object, drawn from an angle that shows its shape." },
+      mech: { name: "Mechanism", desc: "A turret or anything whose top turns on a pivot. Two FBX files: base and top.", tip: "A side or front view where the line between base and top is level." },
+      ground: { name: "Ground", desc: "A floor pattern turned into a flat ground tile FBX. Under a minute.", tip: "A top-down floor pattern. The center square is used." },
+    } as Record<Kind, { name: string; desc: string; tip: string }>,
+    s1: "02 / DRAWING", invite: "Invite code", invitePh: "Enter the code you were given", drawing: "Drawing",
     drop: "Drop a PNG, JPG, or WEBP here, or choose a file. Up to 10 MB.", choose: "Choose a file", chooseAgain: "Choose another file",
-    s2: "02 / ANIMATION", clips: "Clips to include", yours: "your file", remove: "Remove", addClip: "Add a Mixamo FBX clip",
+    s2: "03 / ANIMATION", clips: "Clips to include", yours: "your file", remove: "Remove", addClip: "Add a Mixamo FBX clip",
     mainClip: "Clip to use in the main FBX", clipNote: (n: number) => `Download Mixamo clips as FBX Binary, With Skin, 30 fps. Up to ${n}.`,
-    s3: "03 / BEFORE YOU SEND", consent: "I own this drawing and agree that it and the result are published on a page anyone with the link can open.",
+    s2opt: "03 / SIZE AND SETTINGS",
+    height: "Height (cm)", heightNote: "Total height in the studio. Leave empty for the default.",
+    mechHeight: "Total height (cm)", split: "Split height", splitNote: "Drag the line on the drawing to the border between base and top. The top turns around this height.",
+    splitValue: (p: number) => `${p}% from the top`, front: "Which way the mechanism faces in the drawing", fronts: { viewer: "Toward me (front)", left: "Left", right: "Right" },
+    size: "Tile side (cm)", sizeNote: "Up to 2040 cm. Place several tiles for a large floor.", repeat: "Pattern repeats", repeatNote: "4 to 8 for a tiling pattern, 1 for a single picture.",
+    s3: () => "04 / BEFORE YOU SEND",
+    consent: "I own this drawing and agree that it and the result are published on a page anyone with the link can open.",
     sending: "Sending…", send: "Send the drawing", offline: "The studio PC is offline. Your drawing will be queued and start when it is back.",
-    preview: "YOUR DRAWING", previewAlt: "The drawing you selected", ready: "Ready to send", empty: "One drawing is all it takes", time: "Takes about four to ten minutes once it starts.",
+    preview: "YOUR DRAWING", previewAlt: "The drawing you selected", ready: "Ready to send", empty: "One drawing is all it takes",
+    time: (k: Kind) => (k === "ground" ? "Takes under a minute once it starts." : k === "mech" ? "Builds two parts, about 10 to 15 minutes once it starts." : "Takes about four to ten minutes once it starts."),
+    splitHandle: "Split line (move with the up and down arrow keys)",
   },
 };
+
+function clampNum(v: number, [lo, hi]: readonly [number, number]): number {
+  return Math.min(hi, Math.max(lo, v));
+}
 
 export function FbxCreateApp() {
   const router = useRouter();
@@ -54,6 +89,8 @@ export function FbxCreateApp() {
   const lang = isLocale(segment) ? segment : "ko";
   const t = COPY[useUiLang()];
 
+  const [kind, setKind] = useState<Kind>("character");
+  const [opts, setOpts] = useState<Record<Exclude<Kind, "character">, KindOptions>>({ ...KIND_DEFAULTS });
   const [invite, setInvite] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -67,10 +104,14 @@ export function FbxCreateApp() {
   const [dragging, setDragging] = useState(false);
   const imageInput = useRef<HTMLInputElement>(null);
   const clipInput = useRef<HTMLInputElement>(null);
+  const splitBox = useRef<HTMLDivElement>(null);
+  const splitDrag = useRef(false);
 
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get("invite");
-    setInvite(code || savedInvite());
+    const q = new URLSearchParams(window.location.search);
+    setInvite(q.get("invite") || savedInvite());
+    const k = q.get("kind");
+    if (k && (KINDS as string[]).includes(k)) setKind(k as Kind);
   }, []);
 
   useEffect(() => {
@@ -85,6 +126,10 @@ export function FbxCreateApp() {
     setImageUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [image]);
+
+  function setOpt(k: Exclude<Kind, "character">, key: keyof KindOptions, value: KindOptions[keyof KindOptions]) {
+    setOpts(prev => ({ ...prev, [k]: { ...prev[k], [key]: value } }));
+  }
 
   function pickImage(file: File | undefined) {
     setError(null);
@@ -115,8 +160,25 @@ export function FbxCreateApp() {
     });
   }
 
+  // 장치(mech): 그림 위 가로선 = 자르는 높이 (그림 높이 대비 0.05~0.95)
+  function splitFromPointer(clientY: number) {
+    const box = splitBox.current?.getBoundingClientRect();
+    if (!box || box.height <= 0) return;
+    setOpt("mech", "split", Math.round(clampNum((clientY - box.top) / box.height, [0.05, 0.95]) * 1000) / 1000);
+  }
+
+  const split = opts.mech.split ?? 0.5;
   const allClips = [...clips, ...uploads.map(u => u.name)];
-  const ready = Boolean(invite.trim() && image && consent && allClips.length && !busy);
+  const ready = Boolean(invite.trim() && image && consent && (kind !== "character" || allClips.length) && !busy);
+
+  function cleanOptions(): KindOptions {
+    if (kind === "character") return {};
+    const o = { ...opts[kind] };
+    if (o.height_cm !== undefined) o.height_cm = clampNum(Number(o.height_cm) || KIND_DEFAULTS[kind].height_cm!, OPTION_RANGES.height_cm);
+    if (o.size_cm !== undefined) o.size_cm = clampNum(Number(o.size_cm) || 2000, OPTION_RANGES.size_cm);
+    if (o.uv_repeat !== undefined) o.uv_repeat = clampNum(Math.round(Number(o.uv_repeat) || 1), OPTION_RANGES.uv_repeat);
+    return o;
+  }
 
   async function submit() {
     if (!image || busy) return;
@@ -126,6 +188,8 @@ export function FbxCreateApp() {
       const result = await submitJob({
         invite,
         image,
+        kind,
+        options: cleanOptions(),
         clips,
         defaultClip: allClips.includes(defaultClip) ? defaultClip : allClips[0],
         uploads,
@@ -140,11 +204,30 @@ export function FbxCreateApp() {
     }
   }
 
+  const numberField = (id: string, label: string, note: string, k: Exclude<Kind, "character">, key: "height_cm" | "size_cm" | "uv_repeat", range: readonly [number, number], step = 1) => (
+    <>
+      <label htmlFor={id}>{label}</label>
+      <input id={id} className="fbx-input" type="number" inputMode="decimal" min={range[0]} max={range[1]} step={step}
+        value={opts[k][key] ?? ""} onChange={e => setOpt(k, key, e.target.value === "" ? undefined : Number(e.target.value))} />
+      <p className="small-note">{note}</p>
+    </>
+  );
+
   return (
     <div className="creation-demo">
       <div className="creation-controls">
-        <span className="eyebrow">{t.s1}</span>
+        <span className="eyebrow">{t.s0}</span>
+        <fieldset className="fbx-fieldset fbx-kinds">
+          <legend>{t.kindLegend}</legend>
+          {KINDS.map(k => (
+            <label key={k} className={kind === k ? "fbx-kind active" : "fbx-kind"}>
+              <input type="radio" name="fbx-kind" value={k} checked={kind === k} onChange={() => { setKind(k); setError(null); }} />
+              <span><strong>{t.kinds[k].name}</strong><small>{t.kinds[k].desc}</small></span>
+            </label>
+          ))}
+        </fieldset>
 
+        <span className="eyebrow">{t.s1}</span>
         <label htmlFor="invite-code">{t.invite}</label>
         <input id="invite-code" className="fbx-input" value={invite} autoComplete="off" spellCheck={false}
           placeholder={t.invitePh} onChange={e => setInvite(e.target.value)} />
@@ -161,37 +244,66 @@ export function FbxCreateApp() {
             {image ? t.chooseAgain : t.choose}
           </button>
         </div>
+        <p className="small-note">{t.kinds[kind].tip}</p>
 
-        <span className="eyebrow">{t.s2}</span>
-        <fieldset className="fbx-fieldset">
-          <legend>{t.clips}</legend>
-          {LIBRARY_CLIPS.map(name => (
-            <label key={name} className="fbx-check">
-              <input type="checkbox" checked={clips.includes(name)} onChange={() => toggleClip(name)} />
-              <span>{name}</span>
-            </label>
-          ))}
-          {uploads.map(u => (
-            <label key={u.name} className="fbx-check">
-              <input type="checkbox" checked readOnly />
-              <span>{u.name} / {t.yours}</span>
-              <button type="button" className="text-link" onClick={() => setUploads(prev => prev.filter(x => x.name !== u.name))}>{t.remove}</button>
-            </label>
-          ))}
-          <input ref={clipInput} type="file" accept=".fbx" hidden onChange={e => { pickClip(e.target.files?.[0]); if (clipInput.current) clipInput.current.value = ""; }} />
-          <button type="button" className="button outline" onClick={() => clipInput.current?.click()}>{t.addClip}</button>
-        </fieldset>
-        {allClips.length > 1 && (
+        {kind === "character" ? (
           <>
-            <label htmlFor="default-clip">{t.mainClip}</label>
-            <select id="default-clip" value={allClips.includes(defaultClip) ? defaultClip : allClips[0]} onChange={e => setDefaultClip(e.target.value)}>
-              {allClips.map(name => <option key={name} value={name}>{name}</option>)}
-            </select>
+            <span className="eyebrow">{t.s2}</span>
+            <fieldset className="fbx-fieldset">
+              <legend>{t.clips}</legend>
+              {LIBRARY_CLIPS.map(name => (
+                <label key={name} className="fbx-check">
+                  <input type="checkbox" checked={clips.includes(name)} onChange={() => toggleClip(name)} />
+                  <span>{name}</span>
+                </label>
+              ))}
+              {uploads.map(u => (
+                <label key={u.name} className="fbx-check">
+                  <input type="checkbox" checked readOnly />
+                  <span>{u.name} / {t.yours}</span>
+                  <button type="button" className="text-link" onClick={() => setUploads(prev => prev.filter(x => x.name !== u.name))}>{t.remove}</button>
+                </label>
+              ))}
+              <input ref={clipInput} type="file" accept=".fbx" hidden onChange={e => { pickClip(e.target.files?.[0]); if (clipInput.current) clipInput.current.value = ""; }} />
+              <button type="button" className="button outline" onClick={() => clipInput.current?.click()}>{t.addClip}</button>
+            </fieldset>
+            {allClips.length > 1 && (
+              <>
+                <label htmlFor="default-clip">{t.mainClip}</label>
+                <select id="default-clip" value={allClips.includes(defaultClip) ? defaultClip : allClips[0]} onChange={e => setDefaultClip(e.target.value)}>
+                  {allClips.map(name => <option key={name} value={name}>{name}</option>)}
+                </select>
+              </>
+            )}
+            <p className="small-note">{t.clipNote(MAX_CLIPS)}</p>
+          </>
+        ) : (
+          <>
+            <span className="eyebrow">{t.s2opt}</span>
+            {kind === "static" && numberField("opt-height", t.height, t.heightNote, "static", "height_cm", OPTION_RANGES.height_cm)}
+            {kind === "mech" && (
+              <>
+                {numberField("opt-mech-height", t.mechHeight, t.heightNote, "mech", "height_cm", OPTION_RANGES.height_cm)}
+                <label htmlFor="opt-split">{t.split}: {t.splitValue(Math.round(split * 100))}</label>
+                <input id="opt-split" type="range" min={0.05} max={0.95} step={0.005} value={split}
+                  onChange={e => setOpt("mech", "split", Number(e.target.value))} />
+                <p className="small-note">{t.splitNote}</p>
+                <label htmlFor="opt-front">{t.front}</label>
+                <select id="opt-front" value={opts.mech.front ?? "viewer"} onChange={e => setOpt("mech", "front", e.target.value as KindOptions["front"])}>
+                  {(["viewer", "left", "right"] as const).map(f => <option key={f} value={f}>{t.fronts[f]}</option>)}
+                </select>
+              </>
+            )}
+            {kind === "ground" && (
+              <>
+                {numberField("opt-size", t.size, t.sizeNote, "ground", "size_cm", OPTION_RANGES.size_cm, 10)}
+                {numberField("opt-repeat", t.repeat, t.repeatNote, "ground", "uv_repeat", OPTION_RANGES.uv_repeat)}
+              </>
+            )}
           </>
         )}
-        <p className="small-note">{t.clipNote(MAX_CLIPS)}</p>
 
-        <span className="eyebrow">{t.s3}</span>
+        <span className="eyebrow">{t.s3(kind)}</span>
         <label className="fbx-check">
           <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
           <span>{t.consent}</span>
@@ -206,12 +318,31 @@ export function FbxCreateApp() {
 
       <div className="creation-preview">
         <span className="eyebrow">{t.preview}</span>
-        {imageUrl
-          ? <img className="fbx-drawing-preview" src={imageUrl} alt={t.previewAlt} />
-          : <div className="fbx-placeholder" aria-hidden="true" />}
+        {imageUrl ? (
+          kind === "mech" ? (
+            <div className="fbx-split-wrap" ref={splitBox}
+              onPointerDown={e => { splitDrag.current = true; (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); splitFromPointer(e.clientY); }}
+              onPointerMove={e => { if (splitDrag.current) splitFromPointer(e.clientY); }}
+              onPointerUp={() => { splitDrag.current = false; }}
+              onPointerCancel={() => { splitDrag.current = false; }}>
+              <img className="fbx-split-image" src={imageUrl} alt={t.previewAlt} draggable={false} />
+              <div className="fbx-split-shade top" style={{ height: `${split * 100}%` }} aria-hidden="true" />
+              <div className="fbx-split-line" style={{ top: `${split * 100}%` }} role="slider" tabIndex={0}
+                aria-label={t.splitHandle} aria-valuemin={5} aria-valuemax={95} aria-valuenow={Math.round(split * 100)}
+                onKeyDown={e => {
+                  if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setOpt("mech", "split", clampNum(split + (e.key === "ArrowUp" ? -0.01 : 0.01), [0.05, 0.95]));
+                  }
+                }}>
+                <span>{t.splitValue(Math.round(split * 100))}</span>
+              </div>
+            </div>
+          ) : <img className="fbx-drawing-preview" src={imageUrl} alt={t.previewAlt} />
+        ) : <div className="fbx-placeholder" aria-hidden="true" />}
         <div>
           <h3>{image ? t.ready : t.empty}</h3>
-          <p className="small-note">{t.time}</p>
+          <p className="small-note">{t.time(kind)}</p>
         </div>
       </div>
     </div>

@@ -30,8 +30,54 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_FBX_BYTES = 10 * 1024 * 1024;
 const MAX_CLIPS = 4;
 const CLIP_NAME_RE = /^[A-Za-z0-9_-]{1,64}$/;
-/** 워커가 올릴 수 있는 산출물 이름 (4개 + 클립별 FBX) */
-const OUT_NAME_RE = /^(final\.fbx|preview\.glb|preview\.png|thumb\.webp|anims\/[A-Za-z0-9_-]{1,64}_ovdr\.fbx)$/;
+/** 워커가 올릴 수 있는 산출물 이름 (4개 + 클립별 FBX + 장치 부품 FBX) */
+const OUT_NAME_RE = /^(final\.fbx|preview\.glb|preview\.png|thumb\.webp|anims\/[A-Za-z0-9_-]{1,64}_ovdr\.fbx|parts\/(top|base)\.fbx)$/;
+
+/**
+ * 작업 종류 (2026-10-18). character = 기존 캐릭터(리깅+애니). 나머지는 본 없는 FBX.
+ * 옵션 범위는 집 PC 워커(comfyui-docker ovdr/server/worker.py KIND_DEFAULTS·kind_options)와 같게 유지한다.
+ */
+const KINDS = ['character', 'static', 'mech', 'ground'] as const;
+type Kind = (typeof KINDS)[number];
+const KIND_OPTIONS: Record<Exclude<Kind, 'character'>, Record<string, { min?: number; max?: number; def: number | string; values?: string[] }>> = {
+	static: { height_cm: { min: 10, max: 2000, def: 120 } },
+	mech: { height_cm: { min: 10, max: 2000, def: 200 }, split: { min: 0.05, max: 0.95, def: 0.5 }, front: { def: 'viewer', values: ['viewer', 'left', 'right'] } },
+	ground: { size_cm: { min: 100, max: 2040, def: 2000 }, uv_repeat: { min: 1, max: 16, def: 1 } },
+};
+
+/** 종류별 옵션 정리 — 범위 밖 값은 오류, 빠진 값은 기본값. 키 순서를 고정해 중복 판정 문자열을 안정시킨다. */
+function parseKindOptions(kind: Kind, raw: string | null): { options: Record<string, number | string> | null; error?: string } {
+	if (kind === 'character') return { options: null };
+	let given: Record<string, unknown> = {};
+	if (raw && raw.trim()) {
+		try {
+			const v = JSON.parse(raw);
+			if (typeof v !== 'object' || v === null || Array.isArray(v)) return { options: null, error: 'options 형식 오류' };
+			given = v as Record<string, unknown>;
+		} catch {
+			return { options: null, error: 'options 가 JSON 이 아닙니다' };
+		}
+	}
+	const out: Record<string, number | string> = {};
+	for (const [k, spec] of Object.entries(KIND_OPTIONS[kind])) {
+		const v = given[k];
+		if (v === undefined || v === null || v === '') {
+			out[k] = spec.def;
+			continue;
+		}
+		if (spec.values) {
+			if (!spec.values.includes(String(v))) return { options: null, error: `${k} 값은 ${spec.values.join('/')} 중 하나` };
+			out[k] = String(v);
+			continue;
+		}
+		const n = Number(v);
+		if (!Number.isFinite(n) || n < (spec.min ?? -Infinity) || n > (spec.max ?? Infinity)) {
+			return { options: null, error: `${k} 는 ${spec.min}~${spec.max} 사이` };
+		}
+		out[k] = Math.round(n * 1000) / 1000;
+	}
+	return { options: out };
+}
 
 const CONTENT_TYPES: Record<string, string> = {
 	fbx: 'application/octet-stream',
@@ -200,6 +246,8 @@ interface JobRow {
 	anim_spec: string | null;
 	upload_clips: string | null;
 	files: string | null;
+	kind: string | null;
+	options: string | null;
 	error_public: string | null;
 	error_private: string | null;
 	log_tail: string | null;
@@ -212,6 +260,16 @@ function parseList(raw: string | null): string[] {
 		return Array.isArray(v) ? v.map(String) : [];
 	} catch {
 		return [];
+	}
+}
+
+function parseObj(raw: string | null): Record<string, unknown> | null {
+	if (!raw) return null;
+	try {
+		const v = JSON.parse(raw);
+		return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+	} catch {
+		return null;
 	}
 }
 
@@ -268,6 +326,8 @@ async function publicView(env: Env, row: JobRow) {
 		public: Boolean(row.public),
 		input_url: `/jobs/${row.id}/input.png`,
 		files: fileUrls(env, row),
+		kind: row.kind || 'character',
+		options: parseObj(row.options),
 		anim_request: animSpec,
 		anim_default: row.anim_default,
 		body_type: row.body_type,
@@ -305,15 +365,23 @@ async function createJob(req: Request, env: Env): Promise<Response> {
 	const imageBytes = new Uint8Array(await image.arrayBuffer());
 	if (!imageKind(imageBytes.subarray(0, 16))) return err(415, 'bad_image', 'PNG·JPG·WEBP 만 받습니다');
 
+	// 작업 종류·옵션 (2026-10-18). 캐릭터가 아니면 애니메이션 요청·클립은 받지 않는다.
+	const kindRaw = String(form.get('kind') ?? 'character').trim() || 'character';
+	if (!(KINDS as readonly string[]).includes(kindRaw)) return err(400, 'bad_kind', `kind 는 ${KINDS.join('/')} 중 하나`);
+	const kind = kindRaw as Kind;
+	const opt = parseKindOptions(kind, typeof form.get('options') === 'string' ? (form.get('options') as string) : null);
+	if (opt.error) return err(400, 'bad_options', opt.error);
+	const optionsText = opt.options ? JSON.stringify(opt.options) : null;
+
 	// 요청서(inbox json 과 동일 형식)
-	const parsed = parseAnimSpec(typeof form.get('anims') === 'string' ? (form.get('anims') as string) : null);
+	const parsed = parseAnimSpec(kind === 'character' && typeof form.get('anims') === 'string' ? (form.get('anims') as string) : null);
 	if (parsed.error) return err(400, 'bad_anims', parsed.error);
 
 	// 사용자 업로드 클립: clip_<이름> 필드. 이름은 요청서의 클립 이름과 맞춰야 한다.
 	const uploads: { name: string; bytes: Uint8Array }[] = [];
 	for (const [key, value] of form.entries()) {
 		const clip = asFile(value);
-		if (!key.startsWith('clip_') || !clip) continue;
+		if (!key.startsWith('clip_') || !clip || kind !== 'character') continue;
 		const name = key.slice(5);
 		if (!CLIP_NAME_RE.test(name)) return err(400, 'bad_clip_name', `클립 이름 형식 오류: ${name.slice(0, 32)}`);
 		if (clip.size > MAX_FBX_BYTES) return err(413, 'clip_too_large', `클립 FBX 는 ${MAX_FBX_BYTES / 1024 / 1024}MB 이하`);
@@ -327,13 +395,13 @@ async function createJob(req: Request, env: Env): Promise<Response> {
 	const spec = parsed.spec ?? { anims: [] as string[] };
 	for (const u of uploads) if (!spec.anims.includes(u.name)) spec.anims.push(u.name);
 
-	// 중복 제거 — 같은 이미지는 기존 작업을 돌려준다.
+	// 중복 제거 — 같은 이미지·같은 종류·같은 옵션이면 기존 작업을 돌려준다.
 	// 실패한 작업과 숨긴 작업은 제외: 그러면 같은 그림을 다시 넣어 재시도할 수 있다(크래시 재시도를 안 하므로 더 중요하다).
 	const sha = await sha256Hex(imageBytes);
 	const dup = await env.DB.prepare(
-		"SELECT id, status FROM jobs WHERE input_sha256 = ? AND hidden = 0 AND status IN ('queued','running','done') ORDER BY created_at DESC LIMIT 1"
+		"SELECT id, status FROM jobs WHERE input_sha256 = ? AND COALESCE(kind,'character') = ? AND COALESCE(options,'') = ? AND hidden = 0 AND status IN ('queued','running','done') ORDER BY created_at DESC LIMIT 1"
 	)
-		.bind(sha)
+		.bind(sha, kind, optionsText ?? '')
 		.first<{ id: string; status: string }>();
 	if (dup) return json({ id: dup.id, status: dup.status, duplicate: true });
 
@@ -356,8 +424,8 @@ async function createJob(req: Request, env: Env): Promise<Response> {
 
 	await env.DB.prepare(
 		`INSERT INTO jobs (id, status, step, progress, created_at, owner_token_hash, input_sha256, input_name,
-                       public, hidden, anim_spec, upload_clips)
-     VALUES (?, 'queued', NULL, 0, ?, ?, ?, ?, ?, 0, ?, ?)`
+                       public, hidden, anim_spec, upload_clips, kind, options)
+     VALUES (?, 'queued', NULL, 0, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`
 	)
 		.bind(
 			id,
@@ -367,7 +435,9 @@ async function createJob(req: Request, env: Env): Promise<Response> {
 			image.name ? image.name.slice(0, 200) : null,
 			String(form.get('public') ?? '1') === '0' ? 0 : 1,
 			spec.anims.length || spec.default ? JSON.stringify(spec) : null,
-			uploadMeta.length ? JSON.stringify(uploadMeta) : null
+			uploadMeta.length ? JSON.stringify(uploadMeta) : null,
+			kind,
+			optionsText
 		)
 		.run();
 
@@ -411,6 +481,8 @@ async function claim(env: Env): Promise<Response> {
 				input_name: row.input_name,
 				anim_spec: spec,
 				upload_clips: row.upload_clips ? JSON.parse(row.upload_clips) : [],
+				kind: row.kind || 'character',
+				options: parseObj(row.options) ?? {},
 				created_at: row.created_at,
 			},
 		});

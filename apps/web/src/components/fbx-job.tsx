@@ -4,7 +4,7 @@ import { createElement, useCallback, useEffect, useRef, useState } from "react";
 import Link, { useUiLang } from "./localized-link";
 import type { UiLang } from "@/lib/i18n";
 import {
-  clipFiles, elapsed, fileLabel, getJob, inputImageUrl, jobToken, patchJob, stepLabel,
+  clipFiles, elapsed, fileLabel, getJob, inputImageUrl, jobToken, kindLabel, patchJob, stepLabel,
   FbxApiError, type Job,
 } from "@/lib/fbx-api";
 
@@ -25,7 +25,10 @@ const COPY = {
     ahead: (n: number) => `앞에 ${n}개가 있습니다.`, next: "다음 차례입니다.", offline: "작업실 PC가 꺼져 있습니다. 켜지면 바로 처리합니다.",
     autoRefresh: "이 페이지는 스스로 새로고침됩니다. 닫았다가 같은 링크로 다시 열어도 됩니다.",
     failed: "이 그림은 변환하지 못했습니다.", another: "다른 그림 보내기",
-    facts: { anim: "애니메이션", body: "체형", big: "큰 머리", standard: "보통", skeleton: "뼈대", template: "템플릿", auto: "자동", time: "처리 시간" },
+    facts: { kind: "종류", anim: "애니메이션", body: "체형", big: "큰 머리", standard: "보통", skeleton: "뼈대", template: "템플릿", auto: "자동", time: "처리 시간",
+      height: "높이", size: "바닥 한 변", repeat: "무늬 반복", split: "자르는 높이", splitV: (p: number) => `위에서 ${p}%` },
+    yoursKind: { character: "내 캐릭터", static: "내 물체", mech: "내 장치", ground: "내 바닥" } as Record<string, string>,
+    mechNote: "받침(고정)과 윗부분(움직임) FBX를 둘 다 받아 스튜디오에서 한 모델로 묶으세요. 윗부분의 원점이 회전축입니다.",
     footer: "링크를 아는 사람은 누구나 이 페이지를 열고 파일을 받을 수 있습니다.",
   },
   en: {
@@ -40,7 +43,10 @@ const COPY = {
     ahead: (n: number) => `${n} ahead of yours.`, next: "Yours is next.", offline: "The studio PC is offline. Processing starts as soon as it is back.",
     autoRefresh: "This page updates by itself. You can close it and open the same link later.",
     failed: "This drawing could not be converted.", another: "Try another drawing",
-    facts: { anim: "Animation", body: "Body type", big: "Big head", standard: "Standard", skeleton: "Skeleton", template: "Template", auto: "Auto", time: "Processing time" },
+    facts: { kind: "Type", anim: "Animation", body: "Body type", big: "Big head", standard: "Standard", skeleton: "Skeleton", template: "Template", auto: "Auto", time: "Processing time",
+      height: "Height", size: "Tile side", repeat: "Pattern repeats", split: "Split height", splitV: (p: number) => `${p}% from the top` },
+    yoursKind: { character: "Your character", static: "Your object", mech: "Your mechanism", ground: "Your ground" } as Record<string, string>,
+    mechNote: "Download both the base (fixed) and the top (moving) FBX and group them as one model in the studio. The top's origin is its pivot.",
     footer: "Anyone with this link can open this page and download the files.",
   },
 };
@@ -113,9 +119,14 @@ function Downloads({ job }: { job: Job }) {
   // final.fbx 에 들어간 클립을 맨 위로
   const clips = [...clipFiles(job.files)].sort((a, b) => Number(b.clip === job.anim_default) - Number(a.clip === job.anim_default));
   const glb = job.files["preview.glb"];
+  const parts = (["parts/base.fbx", "parts/top.fbx"] as const).filter(n => job.files[n]);
   return (
     <div className="fbx-downloads">
       {main && <a className="button primary wide" href={main} download>{t.download(fileLabel("final.fbx", lang))}</a>}
+      {parts.map((n, i) => (
+        <a key={n} className={i === 0 ? "button primary wide" : "button outline wide"} href={job.files[n]} download>{t.download(fileLabel(n, lang))}</a>
+      ))}
+      {parts.length > 0 && <p className="small-note">{t.mechNote}</p>}
       {clips.length > 1 && clips.map(c => (
         <a key={c.name} className="button outline wide" href={c.url} download>
           {t.clip(c.clip)}{c.clip === job.anim_default ? t.alsoMain : ""}
@@ -241,6 +252,14 @@ export function FbxJobView() {
 
   const waiting = job.status === "queued" || job.status === "running";
   const facts: [string, string][] = [];
+  if (job.kind && job.kind !== "character") {
+    facts.push([t.facts.kind, kindLabel(job.kind, lang)]);
+    const o = job.options || {};
+    if (o.height_cm) facts.push([t.facts.height, `${o.height_cm} cm`]);
+    if (o.split) facts.push([t.facts.split, t.facts.splitV(Math.round(o.split * 100))]);
+    if (o.size_cm) facts.push([t.facts.size, `${o.size_cm} cm`]);
+    if (o.uv_repeat && o.uv_repeat > 1) facts.push([t.facts.repeat, `${o.uv_repeat}×${o.uv_repeat}`]);
+  }
   if (job.anim_default) facts.push([t.facts.anim, job.anim_default]);
   if (job.body_type) facts.push([t.facts.body, job.body_type === "bighead" ? t.facts.big : t.facts.standard]);
   if (job.skeleton_src) facts.push([t.facts.skeleton, job.skeleton_src === "template" ? t.facts.template : t.facts.auto]);
@@ -255,7 +274,7 @@ export function FbxJobView() {
           <p className="eyebrow">
             {t.status[job.status]}
           </p>
-          <h1>{job.title || t.yours}</h1>
+          <h1>{job.title || t.yoursKind[job.kind ?? "character"] || t.yours}</h1>
         </div>
         <button className="button outline" onClick={copyLink}>{copied ? t.copied : t.copy}</button>
       </div>

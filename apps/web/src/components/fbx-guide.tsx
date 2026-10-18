@@ -44,14 +44,30 @@ type Guide = { toc: string; kicker: string; title: string; lede: string; facts: 
 const KO: Guide = {
   toc: "목차",
   kicker: "FBX Studio · 사용 설명서",
-  title: "그림 한 장으로 OVERDARE 캐릭터 FBX 만들기",
-  lede: "캐릭터 그림을 올리면 3D 모델을 만들고 뼈대를 넣고 애니메이션을 붙여서, OVERDARE 스튜디오에 바로 가져올 수 있는 FBX로 돌려드립니다.",
-  facts: [["필요한 것", "초대 코드 + 그림 1장"], ["걸리는 시간 (시작 후)", "약 4~10분"], ["받는 파일", "FBX · 클립 FBX · GLB"]],
+  title: "그림 한 장으로 OVERDARE용 FBX 만들기",
+  lede: "그림을 올리면 3D 모델로 만들어 OVERDARE 스튜디오에 바로 가져올 수 있는 FBX로 돌려드립니다. 캐릭터는 뼈대와 애니메이션까지, 정적 물체·움직이는 장치·바닥은 뼈대 없는 FBX로 만듭니다.",
+  facts: [["필요한 것", "초대 코드 + 그림 1장"], ["걸리는 시간 (시작 후)", "바닥 1분 · 캐릭터·물체 4~10분 · 장치 10~15분"], ["받는 파일", "FBX · GLB (캐릭터는 클립 FBX도)"]],
   sections: [
     { id: "what", title: "무엇을 만들어 주나", body: <>
       <p>보낸 그림은 작업실 PC 한 대(GPU 1개)에서 아래 순서로 처리됩니다. 한 번에 한 그림씩 처리하므로, 앞에 다른 그림이 있으면 차례를 기다립니다.</p>
       <ol className="fg-pipe" aria-label="처리 순서">{["그림 준비", "3D 모양 만들기", "메시 점검", "뼈대 맞추기", "엔진용 정리", "애니메이션 붙이기", "파일 업로드"].map((s, i) => <li key={s}><b>{i + 1}</b>{s}</li>)}</ol>
       <p>결과 FBX에는 <b>메시 1개, 뼈대, 애니메이션 1개</b>가 함께 들어 있습니다. 뼈대는 OVERDARE 기본 캐릭터(ODA)와 같은 본 이름·구조를 따르고, 그림에서 손가락이 또렷하게 갈라져 있으면 손가락 본도 들어갑니다(<a href="#fingers">손가락과 손</a>).</p>
+    </> },
+    { id: "kinds", title: "만들 수 있는 4가지", body: <>
+      <p>만들기 화면 맨 위 <Ui>만들 것</Ui>에서 고릅니다. 캐릭터만 뼈대와 애니메이션이 들어가고, 나머지 셋은 모양만 있는 FBX입니다.</p>
+      <Table head={["종류", "이런 것", "그림 고르기", "받는 파일", "스튜디오에서"]} rows={[
+        [<b key="c">캐릭터</b>, "사람, 동물, 마스코트", "한 명, 정면, 팔을 몸에서 뗀 A자 자세 (아래 '좋은 그림 고르기')", "FBX(메시+뼈대+동작) · 동작별 FBX · GLB", "그대로 가져와 재생·편집"],
+        [<b key="s">정적 물체</b>, "나무, 테이블, 상자, 바리케이드", "물체 하나, 형태가 잘 보이는 각도, 단색 배경", "FBX 1개 (뼈대 없음, 원점 = 바닥 가운데)", "가져와서 Anchored 로 고정"],
+        [<b key="m">움직이는 장치</b>, "포탑, 회전하는 받침, 크레인", "받침과 윗부분의 경계가 수평으로 보이는 측면·정면 그림", "받침 FBX + 윗부분 FBX (윗부분 원점 = 회전축)", "두 파트를 한 모델로 묶고 스크립트로 윗부분을 돌림"],
+        [<b key="g">바닥</b>, "타일, 흙, 돌바닥 무늬", "위에서 내려다본 무늬. 가운데 정사각형을 씀", "평평한 바닥 FBX 1개 (한 변 최대 2040cm)", "여러 장을 이어 붙여 넓은 바닥"],
+      ]} />
+      <h3>캐릭터 외 종류의 설정</h3>
+      <ul>
+        <li><b>정적 물체</b>: <Ui>높이 (cm)</Ui>. 스튜디오에 들어갔을 때의 전체 높이입니다. 기본 120cm.</li>
+        <li><b>움직이는 장치</b>: <Ui>전체 높이 (cm)</Ui>(기본 200cm), <Ui>자르는 높이</Ui>, <Ui>그림 속 장치가 바라보는 쪽</Ui>. 자르는 높이는 오른쪽 그림 위의 점선을 끌어 받침과 윗부분의 경계에 맞춥니다. 윗부분은 이 높이를 회전축으로 돕니다.</li>
+        <li><b>바닥</b>: <Ui>바닥 한 변 (cm)</Ui>(기본 2000cm), <Ui>무늬 반복 횟수</Ui>. 작은 타일 무늬면 4~8로 올리면 무늬가 촘촘하게 반복됩니다.</li>
+      </ul>
+      <Callout tone="warn" title="새로 연 종류입니다"><p>정적 물체·움직이는 장치·바닥은 새로 열었습니다. 뼈대 없는 FBX를 스튜디오에 가져오는 절차와 결과는 확인하는 중이라, 이 설명서의 해당 부분이 바뀔 수 있습니다.</p></Callout>
     </> },
     { id: "why", title: "Mixamo 동작과 OVERDARE 편집이 함께 되는 이유", body: <>
       <p>AI로 만든 캐릭터 FBX는 보통 둘 중 하나에서 막힙니다. Mixamo 동작을 붙이면 스튜디오에서 손대기 어렵고, 스튜디오용으로 만들면 Mixamo의 많은 동작을 쓸 수 없습니다. 이 서비스는 마지막 변환 단계에서 이 둘을 한 파일 안에서 맞춥니다.</p>
@@ -80,9 +96,10 @@ const KO: Guide = {
     { id: "send", title: "그림 보내기", body: <>
       <p>상단 메뉴의 <Link href="/ko/fbx/create">만들기</Link> 화면에서 보냅니다.</p>
       <Steps items={[
+        <p key="0"><Ui>만들 것</Ui>에서 종류를 고릅니다(<a href="#kinds">만들 수 있는 4가지</a>).</p>,
         <><p><Ui>초대 코드</Ui>에 받은 초대 코드를 넣습니다.</p><p>한 번 넣으면 이 브라우저가 기억합니다. 초대 링크로 들어오면 자동으로 채워집니다.</p></>,
         <p key="2"><Ui>그림</Ui> 칸에 그림을 끌어다 놓거나 <Ui>파일 고르기</Ui>로 고릅니다.</p>,
-        <><p><Ui>넣을 동작</Ui>에서 붙일 애니메이션을 고릅니다. 기본으로 <b>Walking</b>과 <b>Salute</b>를 고를 수 있습니다.</p><ul>
+        <><p><b>캐릭터</b>는 <Ui>넣을 동작</Ui>에서 붙일 애니메이션을 고릅니다. 기본으로 <b>Walking</b>과 <b>Salute</b>를 고를 수 있습니다. 다른 종류는 이 자리에 <Ui>크기와 설정</Ui>이 나옵니다.</p><ul>
           <li>직접 받은 Mixamo 동작을 쓰려면 <Ui>Mixamo FBX 클립 추가</Ui>. Mixamo에서 <b>FBX Binary · With Skin · 30 fps</b>로 받은 파일을 올립니다.</li>
           <li>클립은 그림 하나당 <b>최대 4개</b>, 파일당 <b>10MB 이하</b>입니다.</li>
           <li>클립을 두 개 이상 고르면 <Ui>메인 FBX에 넣을 동작</Ui>에서 메인 FBX에 넣을 동작을 정합니다. 나머지는 클립별 FBX로 따로 받습니다.</li>
@@ -100,6 +117,7 @@ const KO: Guide = {
         [<Ui key="c">뼈대 맞추는 중</Ui>, "뼈대를 맞추는 중. 잘 안 맞으면 자동으로 다시 시도합니다."],
         [<Ui key="d">엔진용으로 정리 중</Ui>, "OVERDARE 규격(크기, 본 이름, 정점당 본 수)에 맞추는 중."],
         [<Ui key="e">애니메이션 붙이는 중</Ui>, "손가락을 확인하고 고른 동작을 붙이는 중."],
+        [<Ui key="x">FBX로 정리하는 중</Ui>, "캐릭터 외 종류: 크기·원점을 맞춰 FBX로 내보내는 중."],
         [<Ui key="f">파일 올리는 중</Ui>, "결과 파일을 올리는 중. 곧 끝납니다."],
       ]} />
       <Callout tone="warn" title="“작업실 PC가 꺼져 있습니다”가 보이면"><p>작업실 PC가 잠시 꺼져 있다는 뜻입니다. 그림은 대기열에 남아 있고, PC가 돌아오면 순서대로 처리됩니다. 다시 보낼 필요는 없습니다.</p></Callout>
@@ -110,7 +128,10 @@ const KO: Guide = {
         [<Ui key="a">FBX 받기</Ui>, "메시 + 뼈대 + 메인 애니메이션 1개", "스튜디오에 가져올 기본 파일"],
         [<><Ui>Walking 클립 받기</Ui> 등</>, "같은 캐릭터 + 해당 동작 1개", "동작을 여러 개 쓰고 싶을 때. 메인과 같은 동작에는 “메인 FBX에도 들어 있음”이 붙습니다"],
         [<Ui key="c">GLB 미리보기 받기</Ui>, "텍스처를 입힌 3D 모델(뼈대 없음)", "모양만 확인하거나 다른 도구에서 볼 때"],
+        [<Ui key="p">받침 FBX (고정 부품) 받기</Ui>, "움직이는 장치의 받침", "스튜디오에 가져와 바닥에 둠"],
+        [<Ui key="q">윗부분 FBX (움직이는 부품) 받기</Ui>, "움직이는 장치의 윗부분. 원점이 회전축", "받침과 한 모델로 묶고 스크립트로 회전"],
       ]} />
+      <p>정적 물체와 바닥은 <Ui>FBX 받기</Ui> 하나로 받습니다.</p>
       <p><Ui>제목</Ui>에 이름을 넣고 <Ui>제목 저장</Ui>으로 결과의 제목을 바꿀 수 있습니다. 계정이 없어서, 제목을 바꿀 권한은 <b>그림을 보낸 브라우저에만</b> 있습니다.</p>
     </> },
     { id: "import", title: "OVERDARE로 가져오기", body: <>
@@ -120,6 +141,7 @@ const KO: Guide = {
         <p key="3">Import Settings에서 <b>Scale Unit</b>을 <Ui>Meter</Ui>로, <Ui>Import Only as Model</Ui>은 <b>끈 채로</b> 가져옵니다.</p>,
         <p key="4">가져온 뒤 캐릭터의 <code>RenderFidelity</code>를 <Ui>Precise</Ui>로 바꿉니다. Automatic이면 멀리서 볼 때 세부 모양이 뭉개져 움직임이 어색해 보일 수 있습니다.</p>,
       ]} />
+      <Callout title="캐릭터 외 종류"><p>정적 물체·움직이는 장치·바닥 FBX는 뼈대와 애니메이션이 없습니다. 단위는 cm, 정적 물체·바닥의 원점은 바닥 가운데, 장치 윗부분의 원점은 회전축입니다. 가져오는 화면의 설정과 결과는 확인하는 중입니다.</p></Callout>
       <Callout title="알아두면 좋은 점"><p>캐릭터는 <b>Custom Skeleton</b>으로 인식됩니다. 본 이름과 구조는 OVERDARE 기본 캐릭터를 따르지만, 스튜디오가 공식 ODA Rig로 판정하지는 않습니다.</p><p>모든 동작은 <b>제자리</b>에서 움직이도록 만들어져 있습니다. 앞으로 걸어가는 이동은 스크립트로 캐릭터를 옮겨서 처리하세요.</p></Callout>
     </> },
     { id: "fingers", title: "손가락과 손", body: <>
@@ -153,8 +175,9 @@ const KO: Guide = {
       ]} />
     </> },
     { id: "limits", title: "제한 한눈에", body: <Table head={["항목", "값"]} rows={[
-      ["그림 형식 / 크기", "PNG · JPG · WEBP / 10MB 이하"], ["그림당 캐릭터", "1명"], ["애니메이션 클립", "그림당 최대 4개 · 파일당 10MB 이하"],
-      ["기본 제공 클립", "Walking · Salute"], ["처리 시간 (시작 후)", "약 4~10분"], ["동시 처리", "한 번에 1개 (차례대로)"],
+      ["그림 형식 / 크기", "PNG · JPG · WEBP / 10MB 이하"], ["그림당 대상", "1개 (캐릭터 1명, 물체 1개, 장치 1대)"], ["애니메이션 클립 (캐릭터)", "그림당 최대 4개 · 파일당 10MB 이하"],
+      ["기본 제공 클립", "Walking · Salute"], ["처리 시간 (시작 후)", "바닥 1분 · 캐릭터·물체 4~10분 · 장치 10~15분"], ["동시 처리", "한 번에 1개 (차례대로)"],
+      ["물체·장치 높이", "10~2000cm (기본 120 / 200)"], ["바닥 한 변 · 무늬 반복", "100~2040cm · 1~16회"],
       ["결과 모델", "메시 1개 · 삼각형 약 8,000개 · 텍스처 512px"], ["손가락 본", "자동 (가능할 때 한 손 15개)"],
     ]} /> },
     { id: "privacy", title: "공개와 삭제", body: <>
@@ -168,14 +191,30 @@ const KO: Guide = {
 const EN: Guide = {
   toc: "Contents",
   kicker: "FBX Studio · Guide",
-  title: "Make an OVERDARE character FBX from one drawing",
-  lede: "Upload a character drawing and we build a 3D model, fit a skeleton, add animation, and return an FBX you can bring straight into OVERDARE Studio.",
-  facts: [["You need", "Invite code + 1 drawing"], ["Time (once started)", "About 4–10 min"], ["You get", "FBX · clip FBX · GLB"]],
+  title: "Make an OVERDARE FBX from one drawing",
+  lede: "Upload a drawing and we turn it into a 3D model and return an FBX you can bring straight into OVERDARE Studio. Characters get a skeleton and animation; static objects, mechanisms, and ground come as skeleton-free FBX files.",
+  facts: [["You need", "Invite code + 1 drawing"], ["Time (once started)", "Ground 1 min · character/object 4–10 min · mechanism 10–15 min"], ["You get", "FBX · GLB (plus clip FBXs for characters)"]],
   sections: [
     { id: "what", title: "What it makes", body: <>
       <p>Your drawing is processed on one studio PC (one GPU) in the order below. Drawings are handled one at a time, so if others are ahead of yours, it waits its turn.</p>
       <ol className="fg-pipe" aria-label="Processing order">{["Prepare drawing", "Build 3D shape", "Check mesh", "Fit skeleton", "Prepare for engine", "Add animation", "Upload files"].map((s, i) => <li key={s}><b>{i + 1}</b>{s}</li>)}</ol>
       <p>The FBX holds <b>one mesh, a skeleton, and one animation</b>. The skeleton follows the bone names and structure of the OVERDARE default character (ODA). If the fingers are clearly separated in the drawing, finger bones are added too (<a href="#fingers">Fingers and hands</a>).</p>
+    </> },
+    { id: "kinds", title: "Four things you can make", body: <>
+      <p>Choose one under <Ui>Type</Ui> at the top of the Create page. Only characters get a skeleton and animation; the other three are shape-only FBX files.</p>
+      <Table head={["Type", "Examples", "Picking the drawing", "You get", "In the studio"]} rows={[
+        [<b key="c">Character</b>, "People, animals, mascots", "One character, front view, arms away from the body (see Picking a good drawing)", "FBX (mesh + skeleton + motion) · clip FBXs · GLB", "Import, play, and edit"],
+        [<b key="s">Static object</b>, "Trees, tables, crates, barricades", "One object, an angle that shows its shape, plain background", "1 FBX (no skeleton, origin at floor center)", "Import and set Anchored"],
+        [<b key="m">Mechanism</b>, "Turrets, turntables, cranes", "A side or front view where the line between base and top is level", "Base FBX + top FBX (top origin = pivot)", "Group the two parts and turn the top with a script"],
+        [<b key="g">Ground</b>, "Tile, dirt, or stone patterns", "A top-down pattern. The center square is used", "1 flat ground FBX (up to 2040 cm per side)", "Place several tiles for a large floor"],
+      ]} />
+      <h3>Settings for the other types</h3>
+      <ul>
+        <li><b>Static object</b>: <Ui>Height (cm)</Ui>, the total height in the studio. Default 120 cm.</li>
+        <li><b>Mechanism</b>: <Ui>Total height (cm)</Ui> (default 200 cm), <Ui>Split height</Ui>, and <Ui>Which way the mechanism faces in the drawing</Ui>. Drag the dashed line on the drawing to the border between base and top; the top turns around that height.</li>
+        <li><b>Ground</b>: <Ui>Tile side (cm)</Ui> (default 2000 cm) and <Ui>Pattern repeats</Ui>. For small tiling patterns, 4 to 8 repeats the pattern more densely.</li>
+      </ul>
+      <Callout tone="warn" title="Newly opened types"><p>Static objects, mechanisms, and ground are new. How skeleton-free FBX files import into the studio is still being checked, so these parts of the guide may change.</p></Callout>
     </> },
     { id: "why", title: "Why Mixamo motion and OVERDARE editing both work", body: <>
       <p>AI-made character FBXs usually get stuck on one side: with Mixamo motion they are hard to edit in the studio, and when built for the studio they cannot use Mixamo’s motion library. The final conversion step reconciles both in one file.</p>
@@ -204,9 +243,10 @@ const EN: Guide = {
     { id: "send", title: "Sending a drawing", body: <>
       <p>Use the <Link href="/ko/fbx/create">Create</Link> page from the top menu.</p>
       <Steps items={[
+        <p key="0">Pick what to make under <Ui>Type</Ui> (<a href="#kinds">Four things you can make</a>).</p>,
         <><p>Enter your invite code in <Ui>Invite code</Ui>.</p><p>This browser remembers it. Opening an invite link fills it in automatically.</p></>,
         <p key="2">Drop the drawing into <Ui>Drawing</Ui> or pick it with <Ui>Choose a file</Ui>.</p>,
-        <><p>Pick the animations in <Ui>Clips to include</Ui>. <b>Walking</b> and <b>Salute</b> are available by default.</p><ul>
+        <><p>For a <b>character</b>, pick the animations in <Ui>Clips to include</Ui>. <b>Walking</b> and <b>Salute</b> are available by default. Other types show <Ui>Size and settings</Ui> here instead.</p><ul>
           <li>To use your own Mixamo motion, use <Ui>Add a Mixamo FBX clip</Ui> and upload a file downloaded from Mixamo as <b>FBX Binary · With Skin · 30 fps</b>.</li>
           <li>Up to <b>4 clips</b> per drawing, <b>10 MB or less</b> each.</li>
           <li>With two or more clips, choose which goes into the main FBX in <Ui>Clip to use in the main FBX</Ui>. The others come as separate clip FBXs.</li>
@@ -224,6 +264,7 @@ const EN: Guide = {
         [<Ui key="c">Fitting the skeleton</Ui>, "Fitting the skeleton. Retries automatically if it does not fit."],
         [<Ui key="d">Preparing it for the engine</Ui>, "Matching OVERDARE’s rules (size, bone names, bones per vertex)."],
         [<Ui key="e">Adding the animation</Ui>, "Checking fingers and adding the chosen motion."],
+        [<Ui key="x">Writing the FBX</Ui>, "Other types: setting size and origin and exporting the FBX."],
         [<Ui key="f">Uploading your files</Ui>, "Uploading the result. Almost done."],
       ]} />
       <Callout tone="warn" title="If you see “The studio PC is offline”"><p>The studio PC is briefly off. Your drawing stays in the queue and is processed in order when the PC is back. No need to send it again.</p></Callout>
@@ -234,7 +275,10 @@ const EN: Guide = {
         [<Ui key="a">Download FBX</Ui>, "Mesh + skeleton + one main animation", "The file to bring into the studio"],
         [<><Ui>Download Walking clip</Ui> etc.</>, "The same character + that one motion", "You want several motions. The one matching the main FBX is marked “also in the main FBX”"],
         [<Ui key="c">Download GLB preview</Ui>, "Textured 3D model (no skeleton)", "Checking the shape or viewing in other tools"],
+        [<Ui key="p">Download Base part FBX (fixed)</Ui>, "The mechanism's base", "Place it in the studio"],
+        [<Ui key="q">Download Top part FBX (moving)</Ui>, "The mechanism's top. Its origin is the pivot", "Group with the base and rotate with a script"],
       ]} />
+      <p>Static objects and ground come as a single <Ui>Download FBX</Ui>.</p>
       <p>Rename a result by typing in <Ui>Title</Ui> and pressing <Ui>Save title</Ui>. There are no accounts, so only <b>the browser that sent the drawing</b> can rename it.</p>
     </> },
     { id: "import", title: "Importing into OVERDARE", body: <>
@@ -244,6 +288,7 @@ const EN: Guide = {
         <p key="3">In Import Settings set <b>Scale Unit</b> to <Ui>Meter</Ui> and leave <Ui>Import Only as Model</Ui> <b>off</b>.</p>,
         <p key="4">After importing, set the character’s <code>RenderFidelity</code> to <Ui>Precise</Ui>. With Automatic, detail can blur at a distance and motion may look off.</p>,
       ]} />
+      <Callout title="Other types"><p>Static object, mechanism, and ground FBX files have no skeleton or animation. Units are centimeters; static objects and ground have their origin at the floor center, and the mechanism's top part has its origin at the pivot. The import settings and results are still being checked.</p></Callout>
       <Callout title="Good to know"><p>The character is recognized as a <b>Custom Skeleton</b>. Bone names and structure follow the OVERDARE default character, but the studio does not classify it as the official ODA Rig.</p><p>All motion is <b>in place</b>. Move the character forward with scripts.</p></Callout>
     </> },
     { id: "fingers", title: "Fingers and hands", body: <>
@@ -277,8 +322,9 @@ const EN: Guide = {
       ]} />
     </> },
     { id: "limits", title: "Limits at a glance", body: <Table head={["Item", "Value"]} rows={[
-      ["Drawing format / size", "PNG · JPG · WEBP / 10 MB or less"], ["Characters per drawing", "1"], ["Animation clips", "Up to 4 per drawing · 10 MB each"],
-      ["Built-in clips", "Walking · Salute"], ["Time (once started)", "About 4–10 min"], ["Concurrency", "One at a time (in order)"],
+      ["Drawing format / size", "PNG · JPG · WEBP / 10 MB or less"], ["Subjects per drawing", "1 (one character, object, or mechanism)"], ["Animation clips (characters)", "Up to 4 per drawing · 10 MB each"],
+      ["Built-in clips", "Walking · Salute"], ["Time (once started)", "Ground 1 min · character/object 4–10 min · mechanism 10–15 min"], ["Concurrency", "One at a time (in order)"],
+      ["Object / mechanism height", "10–2000 cm (default 120 / 200)"], ["Ground side · pattern repeats", "100–2040 cm · 1–16"],
       ["Result model", "1 mesh · about 8,000 triangles · 512 px texture"], ["Finger bones", "Automatic (15 per hand when possible)"],
     ]} /> },
     { id: "privacy", title: "Sharing and removal", body: <>

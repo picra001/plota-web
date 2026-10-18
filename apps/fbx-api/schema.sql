@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS jobs (
   anim_spec        TEXT,                      -- inbox json 그대로: {"anims":[...],"default":"..."}
   upload_clips     TEXT,                      -- [{"name":"Jump","bytes":1234567}] 사용자 업로드 FBX
   files            TEXT,                      -- 업로드 끝난 R2 파일 이름 목록 ["final.fbx",...]
+  kind             TEXT DEFAULT 'character',  -- character|static|mech|ground (2026-10-18)
+  options          TEXT,                      -- 종류별 옵션 JSON {"height_cm":120} 등. character 는 NULL
 
   error_public     TEXT,
   error_private    TEXT,
@@ -51,3 +53,6 @@ CREATE TABLE IF NOT EXISTS worker (k TEXT PRIMARY KEY, v TEXT);
 -- ---------------------------------------------------------------- 마이그레이션
 -- 기존 배포에 컬럼을 더할 때만 주석을 풀어 1회 실행한다.
 -- ALTER TABLE jobs ADD COLUMN anim_spec TEXT;
+-- 2026-10-18 작업 종류 (적용 완료 시 이 주석을 남겨 둔다):
+-- ALTER TABLE jobs ADD COLUMN kind TEXT DEFAULT 'character';
+-- ALTER TABLE jobs ADD COLUMN options TEXT;
