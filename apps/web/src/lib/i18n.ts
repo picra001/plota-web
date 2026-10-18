@@ -1,6 +1,12 @@
 export const locales = ["ko", "en", "ja", "zh", "es"] as const;
 export type Locale = (typeof locales)[number];
-export const defaultLocale: Locale = "en";
+export const defaultLocale: Locale = "ko";
+
+/** 제품 페이지(FBX·웹툰·허브) 문구는 한국어·영어 두 벌. ja·zh·es 는 영어를 보여준다. */
+export type UiLang = "ko" | "en";
+export function uiLang(locale: string | undefined): UiLang {
+  return locale === "ko" ? "ko" : "en";
+}
 
 export function isLocale(value: string): value is Locale {
   return (locales as readonly string[]).includes(value);

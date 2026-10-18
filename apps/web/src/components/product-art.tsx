@@ -1,9 +1,9 @@
 import type { Asset } from "@/lib/mock-data";
 
 /** Small original vector illustrations: lightweight and independent of external image services. */
-export function AssetArt({ asset, className = "" }: { asset: Pick<Asset, "shape" | "color" | "name">; className?: string }) {
+export function AssetArt({ asset, className = "", label = "" }: { asset: Pick<Asset, "shape" | "color">; className?: string; label?: string }) {
   const c = asset.color;
-  return <svg className={`asset-art ${className}`} viewBox="0 0 400 330" role="img" aria-label={`${asset.name} concept illustration`}>
+  return <svg className={`asset-art ${className}`} viewBox="0 0 400 330" role="img" aria-label={label || undefined} aria-hidden={label ? undefined : true}>
     <ellipse cx="200" cy="282" rx="108" ry="16" fill="#202a23" opacity=".10" />
     <g stroke="#344036" strokeWidth="2" strokeLinejoin="round">
       {asset.shape === "robot" && <>

@@ -13,9 +13,9 @@ const labels = {
 };
 
 export function SiteFrame({ kind = "hub", children }: { kind?: "hub" | "fbx" | "webtoon" | "chinese"; children: React.ReactNode }) {
-  const pathname = usePathname() || "/en";
+  const pathname = usePathname() || "/ko";
   const segment = pathname.split("/")[1];
-  const locale = isLocale(segment) ? segment : "en";
+  const locale = isLocale(segment) ? segment : "ko";
   const t = labels[locale];
   const root = kind === "hub" ? `/${locale}` : `/${locale}/${kind}`;
   const links = kind === "hub" ? [[t.home, root], [t.journal, `${root}/devlog`], [t.lab, `${root}/lab`]] : kind === "fbx" ? [[t.home, root], [t.create, `${root}/create`], [t.assets, `${root}/assets`], [t.guides, `${root}/guide`]] : kind === "webtoon" ? [[t.series, root], [t.latest, `${root}#latest`]] : [[t.home, root], [t.learn, `${root}/learn`], [({ko:"단어 사전",en:"Dictionary",ja:"単語辞典",zh:"词典",es:"Diccionario"})[locale], `${root}/vocabulary`], [t.conversation, `${root}/conversation`], [t.settings, `${root}/settings`]];

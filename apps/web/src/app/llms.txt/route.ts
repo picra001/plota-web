@@ -22,7 +22,7 @@ export function GET() {
     stories
       .map(
         (n) =>
-          `- [${n.title}](${absoluteUrl(`/en/webtoon/${n.slug}`)}): ${n.description}`
+          `- [${n.text.ko.title}](${absoluteUrl(`/ko/webtoon/${n.slug}`)}): ${n.text.ko.description}`
       )
       .join("\n") || "- (아직 발행된 이야기가 없습니다)";
 
@@ -30,12 +30,13 @@ export function GET() {
 
 > ${siteMeta[lang].description}
 
-PLOTA is an independent studio. The hub, FBX Studio, and original webtoons use English. Lab and the Mandarin learning app use Korean. All new product content is a preview; AI generation and FBX file downloads are not available yet. SVG concept artwork can be downloaded. Chinese quiz scores are session-only; no learning history is persisted.
+PLOTA is an independent studio. The hub, FBX Studio, and webtoons are in Korean (default, /ko) and English (/en). Lab and the Mandarin learning app use Korean. FBX Studio turns one drawing into a rigged, animated FBX (invite only). Chinese quiz scores are session-only; no learning history is persisted.
 
 ## Products
-- [FBX Studio](${absoluteUrl("/en/fbx")}): AI-assisted creation workflow preview for Roblox and OVERDARE.
-- [Asset library](${absoluteUrl("/en/fbx/assets")}): Original concept illustrations, not validated 3D models.
-- [Webtoons](${absoluteUrl("/en/webtoon")}): Original series and illustrated storyboard episodes.
+- [FBX Studio](${absoluteUrl("/ko/fbx")}): One drawing to a rigged, animated 3D character FBX.
+- [Assets](${absoluteUrl("/ko/fbx/assets")}): Shared results and a small concept collection.
+- [Guide](${absoluteUrl("/ko/fbx/guide")}): How to pick a drawing, send it, and use the result.
+- [Webtoons](${absoluteUrl("/ko/webtoon")}): Original series and illustrated storyboard episodes.
 - [한마디 Chinese](${absoluteUrl("/ko/chinese")}): HSK 1–4 vocabulary quizzes and scoped conversation for Korean speakers. Real vocabulary transcribed from three supplied PDFs.
 - [Lab](${absoluteUrl("/ko/lab")}): Small independent experiments.
 
@@ -55,7 +56,7 @@ ${novLines}
 
 ## Links
 - Devlog: ${absoluteUrl(`/${lang}/devlog`)}
-- Webtoon: ${absoluteUrl("/en/webtoon")}
+- Webtoon: ${absoluteUrl("/ko/webtoon")}
 - RSS: ${absoluteUrl("/feed.xml")}
 - Sitemap: ${absoluteUrl("/sitemap.xml")}
 `;

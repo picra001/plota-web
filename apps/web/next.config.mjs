@@ -9,13 +9,15 @@ const nextConfig = {
   // 루트(/) 접속은 기본 언어로 보낸다. (필요 시 추후 Accept-Language 기반 미들웨어로 교체)
   async redirects() {
     return [
-      { source: "/", destination: "/en", permanent: false },
-      { source: "/fbx/:path*", destination: "/en/fbx/:path*", permanent: false },
-      { source: "/webtoon/:path*", destination: "/en/webtoon/:path*", permanent: false },
+      { source: "/", destination: "/ko", permanent: false },
+      { source: "/fbx/:path*", destination: "/ko/fbx/:path*", permanent: false },
+      { source: "/webtoon/:path*", destination: "/ko/webtoon/:path*", permanent: false },
+      // 플랫폼별 가이드(roblox/overdare)는 하나로 합쳤다
+      { source: "/:lang(en|ko|ja|zh|es)/fbx/guide/:platform", destination: "/:lang/fbx/guide", permanent: true },
       { source: "/chinese/:path*", destination: "/ko/chinese/:path*", permanent: false },
       { source: "/lab", destination: "/ko/lab", permanent: false },
-      { source: "/:lang(en|ko|ja|zh|es)/novel", destination: "/en/webtoon", permanent: true },
-      { source: "/:lang(en|ko|ja|zh|es)/novel/:slug", destination: "/en/webtoon/:slug", permanent: true },
+      { source: "/:lang(en|ko|ja|zh|es)/novel", destination: "/:lang/webtoon", permanent: true },
+      { source: "/:lang(en|ko|ja|zh|es)/novel/:slug", destination: "/:lang/webtoon/:slug", permanent: true },
     ];
   },
   async rewrites() {

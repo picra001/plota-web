@@ -6,7 +6,7 @@ export const site = {
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://plota.ai",
   author: {
     name: "PLOTA",
-    url: "https://github.com/picra001/plota-web",
+    url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://plota.ai",
   },
 } as const;
 

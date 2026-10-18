@@ -2,9 +2,11 @@
 // 서버: apps/fbx-api (Cloudflare Worker + D1 + R2). 엔드포인트 표는 apps/fbx-api/README.md.
 // 주소는 빌드 시 NEXT_PUBLIC_FBX_API_URL 로 바꾼다(로컬 wrangler dev: http://127.0.0.1:8787).
 
+import type { UiLang } from "./i18n";
+
 export const FBX_API_BASE = (process.env.NEXT_PUBLIC_FBX_API_URL || "https://fbx-api.plota.ai").replace(/\/$/, "");
 
-/** 집 PC `serve_data/anims/` 에 올려둔 클립. 클립을 추가하면 이 목록도 함께 늘린다. */
+/** 작업실 PC `serve_data/anims/` 에 올려둔 클립. 클립을 추가하면 이 목록도 함께 늘린다. */
 export const LIBRARY_CLIPS = ["Walking", "Salute"];
 export const DEFAULT_CLIP = "Walking";
 
@@ -48,12 +50,18 @@ export class FbxApiError extends Error {
   }
 }
 
+/** 브라우저 주소의 언어로 고른다(ko 외에는 영어). */
+function offlineMessage(): string {
+  const ko = typeof window !== "undefined" && window.location.pathname.startsWith("/ko");
+  return ko ? "제작 서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해 주세요." : "Could not reach the creation service. Check your connection and try again.";
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
     res = await fetch(FBX_API_BASE + path, { ...init, cache: "no-store" });
   } catch {
-    throw new FbxApiError("Could not reach the creation service. Check your connection and try again.", "offline");
+    throw new FbxApiError(offlineMessage(), "offline");
   }
   const text = await res.text();
   let body: Record<string, unknown> = {};
@@ -192,33 +200,31 @@ export function savedInvite(): string {
 // ---------------------------------------------------------------- 표시용
 
 /** 워커 단계 이름 → 화면 문구. 워커 쪽 step 값은 ovdr/server/README.md §7. */
-const STEP_LABELS: Record<string, string> = {
-  claim: "Getting started",
-  input: "Preparing your drawing",
-  build: "Building the 3D shape",
-  mesh_check: "Checking the mesh",
-  rerig: "Fitting the skeleton",
-  finalize: "Preparing it for the engine",
-  convert: "Converting the axes",
-  anim: "Adding the animation",
-  upload: "Uploading your files",
-  done: "Finished",
-  failed: "Stopped",
+const STEP_LABELS: Record<UiLang, Record<string, string>> = {
+  ko: {
+    claim: "시작하는 중", input: "그림 준비 중", build: "3D 모양 만드는 중", mesh_check: "메시 점검 중", rerig: "뼈대 맞추는 중",
+    finalize: "엔진용으로 정리 중", convert: "축 변환 중", anim: "애니메이션 붙이는 중", upload: "파일 올리는 중", done: "완료", failed: "중단됨",
+  },
+  en: {
+    claim: "Getting started", input: "Preparing your drawing", build: "Building the 3D shape", mesh_check: "Checking the mesh", rerig: "Fitting the skeleton",
+    finalize: "Preparing it for the engine", convert: "Converting the axes", anim: "Adding the animation", upload: "Uploading your files", done: "Finished", failed: "Stopped",
+  },
 };
 
-export function stepLabel(job: Pick<Job, "status" | "step">): string {
-  if (job.status === "queued") return "Waiting for the studio PC";
-  return (job.step && STEP_LABELS[job.step]) || "Working on it";
+export function stepLabel(job: Pick<Job, "status" | "step">, lang: UiLang): string {
+  if (job.status === "queued") return lang === "ko" ? "차례를 기다리는 중" : "Waiting for the studio PC";
+  return (job.step && STEP_LABELS[lang][job.step]) || (lang === "ko" ? "처리 중" : "Working on it");
 }
 
 /** 결과 파일 이름 → 내려받기 버튼 문구. anims/<클립>_ovdr.fbx 는 클립 이름으로. */
-export function fileLabel(name: string): string {
-  if (name === "final.fbx") return "FBX for OVERDARE";
-  if (name === "preview.glb") return "GLB preview";
-  if (name === "preview.png") return "Source image";
-  if (name === "thumb.webp") return "Thumbnail";
+export function fileLabel(name: string, lang: UiLang): string {
+  const ko = lang === "ko";
+  if (name === "final.fbx") return ko ? "FBX" : "FBX";
+  if (name === "preview.glb") return ko ? "GLB 미리보기" : "GLB preview";
+  if (name === "preview.png") return ko ? "원본 그림" : "Source image";
+  if (name === "thumb.webp") return ko ? "썸네일" : "Thumbnail";
   const clip = /^anims\/(.+)_ovdr\.fbx$/.exec(name);
-  if (clip) return `${clip[1]} clip (FBX)`;
+  if (clip) return ko ? `${clip[1]} 클립 (FBX)` : `${clip[1]} clip (FBX)`;
   return name;
 }
 
