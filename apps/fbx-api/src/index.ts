@@ -39,15 +39,22 @@ const OUT_NAME_RE = /^(final\.fbx|preview\.glb|preview\.png|thumb\.webp|anims\/[
  */
 const KINDS = ['character', 'static', 'mech', 'ground'] as const;
 type Kind = (typeof KINDS)[number];
-const KIND_OPTIONS: Record<Exclude<Kind, 'character'>, Record<string, { min?: number; max?: number; def: number | string; values?: string[] }>> = {
-	static: { height_cm: { min: 10, max: 2000, def: 120 } },
-	mech: { height_cm: { min: 10, max: 2000, def: 200 }, split: { min: 0.05, max: 0.95, def: 0.5 }, front: { def: 'viewer', values: ['viewer', 'left', 'right'] } },
+type OptSpec = { min?: number; max?: number; def: number | string; values?: string[]; also?: string[] };
+/**
+ * tris = 삼각형 수(메시 밀도, 2026-10-18). 기본값 = 종류별로 검증한 값. 500~50000 또는 'unlimited'(감폴리 안 함).
+ * OVERDARE 상한은 FBX 1개당 30,000 — 넘겨도 받되 사이트가 경고한다. mech 는 두 파트 합계(윗부분 4 : 받침 3).
+ */
+const TRIS = (def: number): OptSpec => ({ min: 500, max: 50000, def, also: ['unlimited'] });
+const KIND_OPTIONS: Record<Kind, Record<string, OptSpec>> = {
+	character: { tris: TRIS(8000) },
+	static: { height_cm: { min: 10, max: 2000, def: 120 }, tris: TRIS(2000) },
+	mech: { height_cm: { min: 10, max: 2000, def: 200 }, split: { min: 0.05, max: 0.95, def: 0.5 }, front: { def: 'viewer', values: ['viewer', 'left', 'right'] }, tris: TRIS(7000) },
 	ground: { size_cm: { min: 100, max: 2040, def: 2000 }, uv_repeat: { min: 1, max: 16, def: 1 } },
 };
 
-/** 종류별 옵션 정리 — 범위 밖 값은 오류, 빠진 값은 기본값. 키 순서를 고정해 중복 판정 문자열을 안정시킨다. */
+/** 종류별 옵션 정리 — 범위 밖 값은 오류, 빠진 값은 기본값. 키 순서를 고정해 중복 판정 문자열을 안정시킨다.
+ *  캐릭터는 전부 기본값이면 null (옵션이 없던 기존 캐릭터 작업과 중복 판정이 이어지게). */
 function parseKindOptions(kind: Kind, raw: string | null): { options: Record<string, number | string> | null; error?: string } {
-	if (kind === 'character') return { options: null };
 	let given: Record<string, unknown> = {};
 	if (raw && raw.trim()) {
 		try {
@@ -70,12 +77,17 @@ function parseKindOptions(kind: Kind, raw: string | null): { options: Record<str
 			out[k] = String(v);
 			continue;
 		}
+		if (spec.also?.includes(String(v))) {
+			out[k] = String(v);
+			continue;
+		}
 		const n = Number(v);
 		if (!Number.isFinite(n) || n < (spec.min ?? -Infinity) || n > (spec.max ?? Infinity)) {
-			return { options: null, error: `${k} 는 ${spec.min}~${spec.max} 사이` };
+			return { options: null, error: `${k} 는 ${spec.min}~${spec.max} 사이${spec.also ? ` 또는 ${spec.also.join('/')}` : ''}` };
 		}
-		out[k] = Math.round(n * 1000) / 1000;
+		out[k] = k === 'tris' ? Math.round(n) : Math.round(n * 1000) / 1000;
 	}
+	if (kind === 'character' && Object.entries(KIND_OPTIONS.character).every(([k, spec]) => out[k] === spec.def)) return { options: null };
 	return { options: out };
 }
 
@@ -518,6 +530,57 @@ async function reportProgress(req: Request, env: Env, id: string): Promise<Respo
 	return json({ ok: true, cancelled: row.status !== 'running' && row.status !== 'queued', status: row.status });
 }
 
+/**
+ * 큰 산출물(삼각형 '제한 없음' 등)은 R2 multipart 로 나눠 받는다 (2026-10-18). Worker 요청 본문 상한이 100MB 라서.
+ * ?action=create → upload_id / ?action=part&upload_id=&part=N (PUT, 본문 = 조각) / ?action=complete (POST {parts:[{part,etag}]}) / ?action=abort
+ */
+async function multipartFile(req: Request, env: Env, id: string, name: string, url: URL): Promise<Response> {
+	if (!OUT_NAME_RE.test(name)) return err(400, 'bad_name', `허용되지 않는 산출물 이름: ${name.slice(0, 80)}`);
+	const row = await getJob(env, id);
+	if (!row) return err(404, 'not_found', '작업이 없습니다');
+	const key = `p/${id}/${name}`;
+	const action = url.searchParams.get('action');
+	if (action === 'create' && req.method === 'POST') {
+		const mpu = await env.BUCKET.createMultipartUpload(key, {
+			httpMetadata: { contentType: ctFor(name), cacheControl: 'public, max-age=31536000, immutable' },
+		});
+		return json({ ok: true, upload_id: mpu.uploadId });
+	}
+	const uploadId = url.searchParams.get('upload_id') ?? '';
+	if (!uploadId) return err(400, 'no_upload_id', 'upload_id 가 필요합니다');
+	const mpu = env.BUCKET.resumeMultipartUpload(key, uploadId);
+	if (action === 'part' && req.method === 'PUT') {
+		const n = Number(url.searchParams.get('part'));
+		if (!Number.isInteger(n) || n < 1 || n > 10000) return err(400, 'bad_part', 'part 는 1~10000');
+		if (!req.body) return err(400, 'no_body', '본문이 없습니다');
+		const part = await mpu.uploadPart(n, req.body);
+		await env.DB.prepare('UPDATE jobs SET heartbeat_at=? WHERE id=?').bind(Date.now(), id).run();
+		return json({ ok: true, part: part.partNumber, etag: part.etag });
+	}
+	if (action === 'complete' && req.method === 'POST') {
+		const body = (await req.json().catch(() => ({}))) as { parts?: { part?: unknown; etag?: unknown }[] };
+		const parts = (body.parts ?? []).map((p) => ({ partNumber: Number(p.part), etag: String(p.etag ?? '') }));
+		if (!parts.length || parts.some((p) => !Number.isInteger(p.partNumber) || !p.etag)) return err(400, 'bad_parts', 'parts 형식 오류');
+		await mpu.complete(parts);
+		const files = await addFile(env, id, name);
+		return json({ ok: true, name, url: `${env.ASSETS_BASE}/p/${id}/${name}`, files });
+	}
+	if (action === 'abort' && req.method === 'POST') {
+		await mpu.abort();
+		return json({ ok: true });
+	}
+	return err(400, 'bad_action', 'action 은 create/part/complete/abort');
+}
+
+/** 산출물 목록에 이름을 더한다(이미 있으면 그대로). */
+async function addFile(env: Env, id: string, name: string): Promise<string[]> {
+	const row = await getJob(env, id);
+	const files = parseList(row?.files ?? null);
+	if (!files.includes(name)) files.push(name);
+	await env.DB.prepare('UPDATE jobs SET files=?, heartbeat_at=? WHERE id=?').bind(JSON.stringify(files), Date.now(), id).run();
+	return files;
+}
+
 async function putFile(req: Request, env: Env, id: string, name: string): Promise<Response> {
 	if (!OUT_NAME_RE.test(name)) return err(400, 'bad_name', `허용되지 않는 산출물 이름: ${name.slice(0, 80)}`);
 	const row = await getJob(env, id);
@@ -659,6 +722,7 @@ async function route(req: Request, env: Env): Promise<Response> {
 			if (seg[3] === 'clips' && seg[4] && m === 'GET') return sendClip(env, id, seg[4]);
 			if (seg[3] === 'progress' && m === 'POST') return reportProgress(req, env, id);
 			if (seg[3] === 'files' && seg.length >= 5 && m === 'PUT') return putFile(req, env, id, seg.slice(4).join('/'));
+			if (seg[3] === 'mpu' && seg.length >= 5) return multipartFile(req, env, id, seg.slice(4).join('/'), url);
 			if (seg[3] === 'finish' && m === 'POST') return finish(req, env, id);
 		}
 		return err(404, 'not_found', '없는 워커 엔드포인트');

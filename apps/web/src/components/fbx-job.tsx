@@ -4,7 +4,7 @@ import { createElement, useCallback, useEffect, useRef, useState } from "react";
 import Link, { useUiLang } from "./localized-link";
 import type { UiLang } from "@/lib/i18n";
 import {
-  clipFiles, elapsed, fileLabel, getJob, inputImageUrl, jobToken, kindLabel, patchJob, stepLabel,
+  clipFiles, elapsed, fileLabel, getJob, inputImageUrl, jobToken, kindLabel, patchJob, stepLabel, KIND_DEFAULTS,
   FbxApiError, type Job,
 } from "@/lib/fbx-api";
 
@@ -26,7 +26,8 @@ const COPY = {
     autoRefresh: "이 페이지는 스스로 새로고침됩니다. 닫았다가 같은 링크로 다시 열어도 됩니다.",
     failed: "이 그림은 변환하지 못했습니다.", another: "다른 그림 보내기",
     facts: { kind: "종류", anim: "애니메이션", body: "체형", big: "큰 머리", standard: "보통", skeleton: "뼈대", template: "템플릿", auto: "자동", time: "처리 시간",
-      height: "높이", size: "바닥 한 변", repeat: "무늬 반복", split: "자르는 높이", splitV: (p: number) => `위에서 ${p}%` },
+      height: "높이", size: "바닥 한 변", repeat: "무늬 반복", split: "자르는 높이", splitV: (p: number) => `위에서 ${p}%`,
+      tris: "삼각형 수(목표)", trisUnlimited: "제한 없음", trisTested: "검증값" },
     yoursKind: { character: "내 캐릭터", static: "내 물체", mech: "내 장치", ground: "내 바닥" } as Record<string, string>,
     mechNote: "받침(고정)과 윗부분(움직임) FBX를 둘 다 받아 스튜디오에서 한 모델로 묶으세요. 윗부분의 원점이 회전축입니다.",
     footer: "링크를 아는 사람은 누구나 이 페이지를 열고 파일을 받을 수 있습니다.",
@@ -44,7 +45,8 @@ const COPY = {
     autoRefresh: "This page updates by itself. You can close it and open the same link later.",
     failed: "This drawing could not be converted.", another: "Try another drawing",
     facts: { kind: "Type", anim: "Animation", body: "Body type", big: "Big head", standard: "Standard", skeleton: "Skeleton", template: "Template", auto: "Auto", time: "Processing time",
-      height: "Height", size: "Tile side", repeat: "Pattern repeats", split: "Split height", splitV: (p: number) => `${p}% from the top` },
+      height: "Height", size: "Tile side", repeat: "Pattern repeats", split: "Split height", splitV: (p: number) => `${p}% from the top`,
+      tris: "Triangles (target)", trisUnlimited: "No limit", trisTested: "tested value" },
     yoursKind: { character: "Your character", static: "Your object", mech: "Your mechanism", ground: "Your ground" } as Record<string, string>,
     mechNote: "Download both the base (fixed) and the top (moving) FBX and group them as one model in the studio. The top's origin is its pivot.",
     footer: "Anyone with this link can open this page and download the files.",
@@ -259,6 +261,13 @@ export function FbxJobView() {
     if (o.split) facts.push([t.facts.split, t.facts.splitV(Math.round(o.split * 100))]);
     if (o.size_cm) facts.push([t.facts.size, `${o.size_cm} cm`]);
     if (o.uv_repeat && o.uv_repeat > 1) facts.push([t.facts.repeat, `${o.uv_repeat}×${o.uv_repeat}`]);
+  }
+  {
+    // 삼각형 수: 옵션이 없으면(기존 작업·캐릭터 기본) 검증값
+    const kind = job.kind ?? "character";
+    const def = KIND_DEFAULTS[kind]?.tris;
+    const tr = job.options?.tris ?? def;
+    if (tr !== undefined) facts.push([t.facts.tris, tr === "unlimited" ? t.facts.trisUnlimited : `${Number(tr).toLocaleString("en-US")}${tr === def ? ` (${t.facts.trisTested})` : ""}`]);
   }
   if (job.anim_default) facts.push([t.facts.anim, job.anim_default]);
   if (job.body_type) facts.push([t.facts.body, job.body_type === "bighead" ? t.facts.big : t.facts.standard]);

@@ -133,3 +133,9 @@
 .fbx-split-line{position:absolute;left:-6px;right:-6px;height:0;border-top:2px dashed var(--accent);outline:none}
 .fbx-split-line:focus-visible{border-top-style:solid}
 .fbx-split-line span{position:absolute;right:0;top:-24px;font-size:11px;background:var(--accent);color:#fff;padding:2px 7px;border-radius:3px;white-space:nowrap}
+
+/* 삼각형 수 경고 (2026-10-18) — 가이드의 .fg-callout.warn 과 같은 색 */
+.fbx-sub-eyebrow{display:block;margin-top:26px}
+.fbx-warn{border-radius:4px;padding:12px 16px;margin:14px 0 4px;background:#fbf0dd;border-left:3px solid #b37a1c;font-size:12px}
+.fbx-warn strong{display:block;font-size:12px;margin-bottom:4px}
+.fbx-warn p{margin:0}.fbx-warn p+p{margin-top:6px}

@@ -68,6 +68,19 @@ const KO: Guide = {
         <li><b>바닥</b>: <Ui>바닥 한 변 (cm)</Ui>(기본 2000cm), <Ui>무늬 반복 횟수</Ui>. 작은 타일 무늬면 4~8로 올리면 무늬가 촘촘하게 반복됩니다.</li>
       </ul>
       <Callout tone="warn" title="새로 연 종류입니다"><p>정적 물체·움직이는 장치·바닥은 새로 열었습니다. 뼈대 없는 FBX를 스튜디오에 가져오는 절차와 결과는 확인하는 중이라, 이 설명서의 해당 부분이 바뀔 수 있습니다.</p></Callout>
+      <h3>메시 밀도 (삼각형 수)</h3>
+      <p>캐릭터·정적 물체·움직이는 장치는 <Ui>메시 밀도</Ui>에서 삼각형 수를 정할 수 있습니다. 기본값은 <b>종류마다 시험해서 확인한 값</b>입니다. 많을수록 둥근 면과 얇은 부분이 매끈해지지만, 시간이 더 걸리고 파일이 무거워집니다. 그림에 없던 뒷면이나 흐린 무늬는 삼각형 수로 나아지지 않습니다(뒷면은 그림 한 장으로 추측한 것이고, 텍스처는 512px 그대로입니다).</p>
+      <Table head={["종류", "검증된 값 (기본)", "범위"]} rows={[
+        [<b key="c">캐릭터</b>, "8,000", "500~50,000 또는 제한 없음"],
+        [<b key="s">정적 물체</b>, "2,000", "500~50,000 또는 제한 없음"],
+        [<b key="m">움직이는 장치</b>, "합계 7,000 (윗부분 4,000 · 받침 3,000)", "합계 500~50,000 또는 제한 없음 · 윗부분 4 : 받침 3 으로 나눔"],
+      ]} />
+      <ul>
+        <li><b>OVERDARE 권장 상한은 FBX 1개당 삼각형 30,000개</b>입니다. 넘으면 스튜디오에서 Import 가 막힐 수 있습니다. 엔진에서 가볍게 쓰려면 3,000~8,000이 적당합니다.</li>
+        <li><Ui>삼각형 수 제한 (권장)</Ui>의 체크를 끄면 <b>제한 없음</b>입니다. TRELLIS 가 만든 메시를 줄이지 않고 그대로 씁니다(보통 수십만~수백만 개). OVERDARE 에는 그대로 넣을 수 없어 다른 도구에서 다듬을 원본이 필요할 때만 쓰세요. 모래주머니 바리케이드 시험에서 368만 개, FBX 136MB 였습니다. 결과 페이지의 3D 미리보기는 50MB 를 넘으면 나오지 않고(그림으로 대신), FBX 는 그대로 내려받을 수 있습니다.</li>
+        <li>검증된 값과 다르게 바꾸면 보내기 전에 <b>종류별 경고</b>가 뜹니다. 보낼 수는 있지만, 그 설정은 아직 시험하지 않았다는 뜻입니다.</li>
+      </ul>
+      <Callout tone="warn" title="캐릭터의 삼각형 수를 바꿀 때"><p>뼈대·가중치·손가락·큰 머리 보정은 8,000 기준으로만 시험했습니다. 크게 늘리면 리깅이 실패하거나 동작이 어색해질 수 있습니다. 제한 없음은 리깅이 GPU 오류로 멈춘 기록이 있어, 그러면 서비스 전체가 멈춥니다.</p></Callout>
     </> },
     { id: "why", title: "Mixamo 동작과 OVERDARE 편집이 함께 되는 이유", body: <>
       <p>AI로 만든 캐릭터 FBX는 보통 둘 중 하나에서 막힙니다. Mixamo 동작을 붙이면 스튜디오에서 손대기 어렵고, 스튜디오용으로 만들면 Mixamo의 많은 동작을 쓸 수 없습니다. 이 서비스는 마지막 변환 단계에서 이 둘을 한 파일 안에서 맞춥니다.</p>
@@ -178,7 +191,8 @@ const KO: Guide = {
       ["그림 형식 / 크기", "PNG · JPG · WEBP / 10MB 이하"], ["그림당 대상", "1개 (캐릭터 1명, 물체 1개, 장치 1대)"], ["애니메이션 클립 (캐릭터)", "그림당 최대 4개 · 파일당 10MB 이하"],
       ["기본 제공 클립", "Walking · Salute"], ["처리 시간 (시작 후)", "바닥 1분 · 캐릭터·물체 4~10분 · 장치 10~15분"], ["동시 처리", "한 번에 1개 (차례대로)"],
       ["물체·장치 높이", "10~2000cm (기본 120 / 200)"], ["바닥 한 변 · 무늬 반복", "100~2040cm · 1~16회"],
-      ["결과 모델", "메시 1개 · 삼각형 약 8,000개 · 텍스처 512px"], ["손가락 본", "자동 (가능할 때 한 손 15개)"],
+      ["삼각형 수 (기본 = 검증값)", "캐릭터 8,000 · 물체 2,000 · 장치 합계 7,000 / 500~50,000 또는 제한 없음"], ["OVERDARE 권장 상한", "FBX 1개당 삼각형 30,000"],
+      ["결과 모델", "FBX 1개당 메시 1개 · 텍스처 512px"], ["손가락 본", "자동 (가능할 때 한 손 15개)"],
     ]} /> },
     { id: "privacy", title: "공개와 삭제", body: <>
       <p>보낸 그림과 결과 페이지는 <b>링크를 아는 사람 누구나</b> 열고 파일을 내려받을 수 있습니다. 직접 그렸거나 권리가 있는 그림만 보내 주세요.</p>
@@ -215,6 +229,19 @@ const EN: Guide = {
         <li><b>Ground</b>: <Ui>Tile side (cm)</Ui> (default 2000 cm) and <Ui>Pattern repeats</Ui>. For small tiling patterns, 4 to 8 repeats the pattern more densely.</li>
       </ul>
       <Callout tone="warn" title="Newly opened types"><p>Static objects, mechanisms, and ground are new. How skeleton-free FBX files import into the studio is still being checked, so these parts of the guide may change.</p></Callout>
+      <h3>Mesh density (triangle count)</h3>
+      <p>Characters, static objects, and mechanisms let you set the triangle count under <Ui>Mesh density</Ui>. The default is <b>the value tested for each type</b>. More triangles make round surfaces and thin parts smoother, but take longer and make the file heavier. They do not fix a back side the drawing never showed or a blurry pattern: the back is guessed from one drawing, and the texture stays at 512 px.</p>
+      <Table head={["Type", "Tested value (default)", "Range"]} rows={[
+        [<b key="c">Character</b>, "8,000", "500–50,000 or no limit"],
+        [<b key="s">Static object</b>, "2,000", "500–50,000 or no limit"],
+        [<b key="m">Mechanism</b>, "7,000 in total (top 4,000 · base 3,000)", "500–50,000 in total or no limit · split top 4 : base 3"],
+      ]} />
+      <ul>
+        <li><b>The OVERDARE recommended limit is 30,000 triangles per FBX.</b> Above that, the studio may refuse to import it. For a light in-game asset, 3,000 to 8,000 is a good range.</li>
+        <li>Unchecking <Ui>Limit the triangle count (recommended)</Ui> means <b>no limit</b>: the mesh TRELLIS builds is used as is, usually hundreds of thousands to millions of triangles. It cannot go into OVERDARE as is, so use it only when you need a source mesh to clean up elsewhere. A sandbag barricade test gave 3.68 million triangles and a 136 MB FBX. The 3D preview on the result page is skipped above 50 MB (the drawing is shown instead); the FBX can still be downloaded.</li>
+        <li>When you change the value away from the tested one, a <b>warning for that type</b> appears before sending. You can still send; it means that setting has not been tested yet.</li>
+      </ul>
+      <Callout tone="warn" title="Changing a character's triangle count"><p>Skeleton, skin weights, fingers, and the big-head fix were only tested at 8,000. Raising it a lot may make rigging fail or motion look off. With no limit, rigging has crashed the GPU before, which stops the whole service.</p></Callout>
     </> },
     { id: "why", title: "Why Mixamo motion and OVERDARE editing both work", body: <>
       <p>AI-made character FBXs usually get stuck on one side: with Mixamo motion they are hard to edit in the studio, and when built for the studio they cannot use Mixamo’s motion library. The final conversion step reconciles both in one file.</p>
@@ -325,7 +352,8 @@ const EN: Guide = {
       ["Drawing format / size", "PNG · JPG · WEBP / 10 MB or less"], ["Subjects per drawing", "1 (one character, object, or mechanism)"], ["Animation clips (characters)", "Up to 4 per drawing · 10 MB each"],
       ["Built-in clips", "Walking · Salute"], ["Time (once started)", "Ground 1 min · character/object 4–10 min · mechanism 10–15 min"], ["Concurrency", "One at a time (in order)"],
       ["Object / mechanism height", "10–2000 cm (default 120 / 200)"], ["Ground side · pattern repeats", "100–2040 cm · 1–16"],
-      ["Result model", "1 mesh · about 8,000 triangles · 512 px texture"], ["Finger bones", "Automatic (15 per hand when possible)"],
+      ["Triangles (default = tested value)", "Character 8,000 · object 2,000 · mechanism 7,000 total / 500–50,000 or no limit"], ["OVERDARE recommended limit", "30,000 triangles per FBX"],
+      ["Result model", "1 mesh per FBX · 512 px texture"], ["Finger bones", "Automatic (15 per hand when possible)"],
     ]} /> },
     { id: "privacy", title: "Sharing and removal", body: <>
       <p>Anyone <b>with the link</b> can open the drawing’s result page and download the files. Only send drawings you made or have the rights to.</p>

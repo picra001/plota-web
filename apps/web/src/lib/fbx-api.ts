@@ -19,13 +19,27 @@ export type JobStatus = "queued" | "running" | "done" | "failed";
 /** 만들 것의 종류. character 외에는 뼈대·애니메이션이 없는 FBX. 값 범위는 apps/fbx-api KIND_OPTIONS 와 같게. */
 export type Kind = "character" | "static" | "mech" | "ground";
 export const KINDS: Kind[] = ["character", "static", "mech", "ground"];
-export type KindOptions = { height_cm?: number; split?: number; front?: "viewer" | "left" | "right"; size_cm?: number; uv_repeat?: number };
-export const KIND_DEFAULTS: Record<Exclude<Kind, "character">, KindOptions> = {
-  static: { height_cm: 120 },
-  mech: { height_cm: 200, split: 0.5, front: "viewer" },
+export type Tris = number | "unlimited";
+export type KindOptions = { height_cm?: number; split?: number; front?: "viewer" | "left" | "right"; size_cm?: number; uv_repeat?: number; tris?: Tris };
+export const KIND_DEFAULTS: Record<Kind, KindOptions> = {
+  character: { tris: 8000 },
+  static: { height_cm: 120, tris: 2000 },
+  mech: { height_cm: 200, split: 0.5, front: "viewer", tris: 7000 },
   ground: { size_cm: 2000, uv_repeat: 1 },
 };
-export const OPTION_RANGES = { height_cm: [10, 2000], size_cm: [100, 2040], uv_repeat: [1, 16] } as const;
+export const OPTION_RANGES = { height_cm: [10, 2000], size_cm: [100, 2040], uv_repeat: [1, 16], tris: [500, 50000] } as const;
+/** 삼각형 수(메시 밀도). 기본값 = 종류별 검증값(KIND_DEFAULTS.tris). OVERDARE 는 FBX 1개당 30,000 이 상한. */
+export const OVERDARE_TRIS_LIMIT = 30000;
+/** 장치는 두 파트 합계를 윗부분 4 : 받침 3 으로 나눈다(검증값 4,000 / 3,000). */
+export const MECH_TOP_SHARE = 4 / 7;
+export function hasTris(kind: Kind): boolean {
+  return KIND_DEFAULTS[kind].tris !== undefined;
+}
+/** FBX 1개에 들어가는 가장 큰 삼각형 수(장치는 윗부분). unlimited 면 null. */
+export function largestPartTris(kind: Kind, tris: Tris): number | null {
+  if (tris === "unlimited") return null;
+  return kind === "mech" ? Math.round(tris * MECH_TOP_SHARE) : tris;
+}
 
 export type Job = {
   id: string;
@@ -114,10 +128,8 @@ export async function submitJob(input: SubmitInput): Promise<SubmitResult> {
   form.set("image", input.image, input.image.name || "drawing.png");
   const kind = input.kind ?? "character";
   form.set("kind", kind);
-  if (kind !== "character") {
-    form.set("options", JSON.stringify(input.options ?? {}));
-    return request<SubmitResult>("/jobs", { method: "POST", body: form });
-  }
+  if (input.options) form.set("options", JSON.stringify(input.options));
+  if (kind !== "character") return request<SubmitResult>("/jobs", { method: "POST", body: form });
   const names = [...input.clips];
   for (const u of input.uploads ?? []) if (!names.includes(u.name)) names.push(u.name);
   if (names.length) {

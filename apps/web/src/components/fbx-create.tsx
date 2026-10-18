@@ -6,6 +6,7 @@ import { isLocale } from "@/lib/i18n";
 import { useUiLang } from "./localized-link";
 import {
   DEFAULT_CLIP, KIND_DEFAULTS, KINDS, LIBRARY_CLIPS, MAX_CLIPS, MAX_CLIP_BYTES, MAX_IMAGE_BYTES, OPTION_RANGES,
+  OVERDARE_TRIS_LIMIT, MECH_TOP_SHARE, hasTris, largestPartTris,
   FbxApiError, getHealth, rememberInvite, rememberJob, savedInvite, submitJob,
   type Kind, type KindOptions,
 } from "@/lib/fbx-api";
@@ -48,6 +49,20 @@ const COPY = {
     preview: "고른 그림", previewAlt: "고른 그림", ready: "보낼 준비 완료", empty: "그림 한 장이면 됩니다",
     time: (k: Kind) => (k === "ground" ? "시작 후 1분 안쪽입니다." : k === "mech" ? "부품 2개를 만들어 시작 후 약 10~15분 걸립니다." : "시작 후 약 4~10분 걸립니다."),
     splitHandle: "자르는 선 (위·아래 화살표로 움직임)",
+    trisTitle: "메시 밀도", trisLimit: "삼각형 수 제한 (권장)", tris: (k: Kind) => (k === "mech" ? "삼각형 수 (두 부품 합계)" : "삼각형 수"),
+    trisNote: (v: number) => `검증된 값 ${n(v)} · OVERDARE 권장 상한 ${n(OVERDARE_TRIS_LIMIT)} (FBX 1개당) · 최대 ${n(50000)}. 많을수록 형태는 매끈하지만 오래 걸리고 무거워집니다.`,
+    trisReset: (v: number) => `검증된 값(${n(v)})으로 되돌리기`,
+    trisMechSplit: (top: number, base: number) => `윗부분 ${n(top)} · 받침 ${n(base)} 으로 나눠 씁니다.`,
+    warnTitle: "확인해 주세요",
+    warnVerified: {
+      character: (v: number) => `검증된 값(${n(v)})과 다릅니다. 뼈대·가중치·손가락·큰 머리 보정은 ${n(v)} 기준으로만 시험했습니다. 리깅이 실패하거나 동작이 어색해질 수 있고, 시간이 더 걸립니다.`,
+      static: (v: number) => `검증된 값(${n(v)})과 다릅니다. 정적 물체는 ${n(v)} 기준으로만 시험했습니다. 형태는 매끈해질 수 있지만 시간이 더 걸리고 파일이 커집니다.`,
+      mech: (v: number) => `검증된 값(합계 ${n(v)} = 윗부분 4,000 · 받침 3,000)과 다릅니다. 장치는 이 값으로만 시험했습니다. 두 부품의 이음새·회전축 위치는 그대로지만 시간이 더 걸립니다.`,
+      ground: () => "",
+    } as Record<Kind, (v: number) => string>,
+    warnLimit: (t: number) => `FBX 1개에 삼각형 약 ${n(t)}개 — OVERDARE 권장 상한 ${n(OVERDARE_TRIS_LIMIT)} 을 넘습니다. 스튜디오에서 Import 가 막힐 수 있습니다.`,
+    warnUnlimited: "제한 없음: TRELLIS 가 만든 메시를 줄이지 않고 그대로 씁니다(보통 수십만~수백만 삼각형 — 모래주머니 시험에서 368만 개, FBX 136MB). OVERDARE 에는 그대로 넣을 수 없고, 시간이 몇 배로 늘며, 결과 페이지의 3D 미리보기는 나오지 않을 수 있습니다(파일은 내려받을 수 있음).",
+    warnUnlimitedChar: "캐릭터는 이 크기에서 리깅이 GPU 오류로 멈춘 기록이 있습니다. 그러면 이 작업만이 아니라 서비스 전체가 멈추고, 관리자가 다시 켜야 합니다.",
   },
   en: {
     badType: "Please choose a PNG, JPG, or WEBP image.", tooBig: (mb: number) => `The image is larger than ${mb} MB.`,
@@ -75,8 +90,26 @@ const COPY = {
     preview: "YOUR DRAWING", previewAlt: "The drawing you selected", ready: "Ready to send", empty: "One drawing is all it takes",
     time: (k: Kind) => (k === "ground" ? "Takes under a minute once it starts." : k === "mech" ? "Builds two parts, about 10 to 15 minutes once it starts." : "Takes about four to ten minutes once it starts."),
     splitHandle: "Split line (move with the up and down arrow keys)",
+    trisTitle: "Mesh density", trisLimit: "Limit the triangle count (recommended)", tris: (k: Kind) => (k === "mech" ? "Triangles (both parts together)" : "Triangles"),
+    trisNote: (v: number) => `Tested value ${n(v)} · OVERDARE recommended limit ${n(OVERDARE_TRIS_LIMIT)} per FBX · up to ${n(50000)}. More triangles give smoother shapes but take longer and weigh more.`,
+    trisReset: (v: number) => `Back to the tested value (${n(v)})`,
+    trisMechSplit: (top: number, base: number) => `Split as top ${n(top)} and base ${n(base)}.`,
+    warnTitle: "Before you send",
+    warnVerified: {
+      character: (v: number) => `This differs from the tested value (${n(v)}). Skeleton, skin weights, fingers and the big-head fix were only tested at ${n(v)}. Rigging may fail or motion may look off, and it takes longer.`,
+      static: (v: number) => `This differs from the tested value (${n(v)}). Static objects were only tested at ${n(v)}. The shape may get smoother, but it takes longer and the file gets bigger.`,
+      mech: (v: number) => `This differs from the tested value (${n(v)} in total: top 4,000, base 3,000). Mechanisms were only tested at that value. The seam and pivot stay the same, but it takes longer.`,
+      ground: () => "",
+    } as Record<Kind, (v: number) => string>,
+    warnLimit: (t: number) => `About ${n(t)} triangles in one FBX, over the OVERDARE recommended limit of ${n(OVERDARE_TRIS_LIMIT)}. The studio may refuse to import it.`,
+    warnUnlimited: "No limit: the mesh TRELLIS builds is used as is, usually hundreds of thousands to millions of triangles (3.68 million and a 136 MB FBX for a sandbag test). It cannot go into OVERDARE as is, takes several times longer, and the 3D preview on the result page may not appear (the files can still be downloaded).",
+    warnUnlimitedChar: "For characters, rigging at this size has crashed the GPU before. That stops the whole service, not just this job, until an operator restarts it.",
   },
 };
+
+function n(v: number): string {
+  return Math.round(v).toLocaleString("en-US");
+}
 
 function clampNum(v: number, [lo, hi]: readonly [number, number]): number {
   return Math.min(hi, Math.max(lo, v));
@@ -90,7 +123,7 @@ export function FbxCreateApp() {
   const t = COPY[useUiLang()];
 
   const [kind, setKind] = useState<Kind>("character");
-  const [opts, setOpts] = useState<Record<Exclude<Kind, "character">, KindOptions>>({ ...KIND_DEFAULTS });
+  const [opts, setOpts] = useState<Record<Kind, KindOptions>>({ ...KIND_DEFAULTS });
   const [invite, setInvite] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -127,7 +160,7 @@ export function FbxCreateApp() {
     return () => URL.revokeObjectURL(url);
   }, [image]);
 
-  function setOpt(k: Exclude<Kind, "character">, key: keyof KindOptions, value: KindOptions[keyof KindOptions]) {
+  function setOpt(k: Kind, key: keyof KindOptions, value: KindOptions[keyof KindOptions]) {
     setOpts(prev => ({ ...prev, [k]: { ...prev[k], [key]: value } }));
   }
 
@@ -172,8 +205,11 @@ export function FbxCreateApp() {
   const ready = Boolean(invite.trim() && image && consent && (kind !== "character" || allClips.length) && !busy);
 
   function cleanOptions(): KindOptions {
-    if (kind === "character") return {};
     const o = { ...opts[kind] };
+    if (hasTris(kind)) {
+      const def = KIND_DEFAULTS[kind].tris as number;
+      o.tris = o.tris === "unlimited" ? "unlimited" : clampNum(Math.round(Number(o.tris) || def), OPTION_RANGES.tris);
+    }
     if (o.height_cm !== undefined) o.height_cm = clampNum(Number(o.height_cm) || KIND_DEFAULTS[kind].height_cm!, OPTION_RANGES.height_cm);
     if (o.size_cm !== undefined) o.size_cm = clampNum(Number(o.size_cm) || 2000, OPTION_RANGES.size_cm);
     if (o.uv_repeat !== undefined) o.uv_repeat = clampNum(Math.round(Number(o.uv_repeat) || 1), OPTION_RANGES.uv_repeat);
@@ -210,6 +246,55 @@ export function FbxCreateApp() {
       <input id={id} className="fbx-input" type="number" inputMode="decimal" min={range[0]} max={range[1]} step={step}
         value={opts[k][key] ?? ""} onChange={e => setOpt(k, key, e.target.value === "" ? undefined : Number(e.target.value))} />
       <p className="small-note">{note}</p>
+    </>
+  );
+
+  // 삼각형 수: 기본 = 종류별 검증값. 체크 해제 = 제한 없음. 검증값과 다르거나 OVERDARE 상한을 넘으면 경고.
+  const trisDef = (KIND_DEFAULTS[kind].tris as number | undefined) ?? 0;
+  const trisRaw = opts[kind].tris;
+  const unlimited = trisRaw === "unlimited";
+  const trisNum = unlimited ? null : clampNum(Math.round(Number(trisRaw) || trisDef), OPTION_RANGES.tris);
+  const trisWarnings: string[] = [];
+  if (hasTris(kind)) {
+    if (unlimited) {
+      trisWarnings.push(t.warnUnlimited);
+      if (kind === "character") trisWarnings.push(t.warnUnlimitedChar);
+    } else if (trisNum !== null) {
+      if (trisNum !== trisDef) trisWarnings.push(t.warnVerified[kind](trisDef));
+      const part = largestPartTris(kind, trisNum);
+      if (part !== null && part > OVERDARE_TRIS_LIMIT) trisWarnings.push(t.warnLimit(part));
+    }
+  }
+  const trisBlock = hasTris(kind) && (
+    <>
+      <span className="eyebrow fbx-sub-eyebrow">{t.trisTitle}</span>
+      <label className="fbx-check">
+        <input type="checkbox" checked={!unlimited}
+          onChange={e => setOpt(kind, "tris", e.target.checked ? trisDef : "unlimited")} />
+        <span>{t.trisLimit}</span>
+      </label>
+      {!unlimited && (
+        <>
+          <label htmlFor="opt-tris">{t.tris(kind)}</label>
+          <input id="opt-tris" className="fbx-input" type="number" inputMode="numeric" min={OPTION_RANGES.tris[0]} max={OPTION_RANGES.tris[1]} step={500}
+            value={trisRaw ?? ""} onChange={e => setOpt(kind, "tris", e.target.value === "" ? undefined : Number(e.target.value))} />
+          {kind === "mech" && trisNum !== null && (
+            <p className="small-note">{t.trisMechSplit(Math.round(trisNum * MECH_TOP_SHARE), trisNum - Math.round(trisNum * MECH_TOP_SHARE))}</p>
+          )}
+        </>
+      )}
+      <p className="small-note">
+        {t.trisNote(trisDef)}{" "}
+        {trisRaw !== trisDef && (
+          <button type="button" className="text-link" onClick={() => setOpt(kind, "tris", trisDef)}>{t.trisReset(trisDef)}</button>
+        )}
+      </p>
+      {trisWarnings.length > 0 && (
+        <div className="fbx-warn" role="note">
+          <strong>{t.warnTitle}</strong>
+          {trisWarnings.map(w => <p key={w}>{w}</p>)}
+        </div>
+      )}
     </>
   );
 
@@ -276,6 +361,7 @@ export function FbxCreateApp() {
               </>
             )}
             <p className="small-note">{t.clipNote(MAX_CLIPS)}</p>
+            {trisBlock}
           </>
         ) : (
           <>
@@ -300,6 +386,7 @@ export function FbxCreateApp() {
                 {numberField("opt-repeat", t.repeat, t.repeatNote, "ground", "uv_repeat", OPTION_RANGES.uv_repeat)}
               </>
             )}
+            {trisBlock}
           </>
         )}
 
