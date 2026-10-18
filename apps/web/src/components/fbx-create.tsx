@@ -44,9 +44,9 @@ const COPY = {
     splitValue: (p: number) => `위에서 ${p}%`, front: "그림 속 장치가 바라보는 쪽", fronts: { viewer: "나를 봄 (정면)", left: "왼쪽", right: "오른쪽" },
     size: "바닥 한 변 (cm)", sizeNote: "최대 2040cm. 넓은 바닥은 여러 장을 이어 붙이세요.", repeat: "무늬 반복 횟수", repeatNote: "타일 무늬면 4~8, 한 장 그림이면 1.",
     s3: (k: Kind) => (k === "character" ? "04 / 보내기 전에" : "04 / 보내기 전에"),
-    consent: "내가 권리를 가진 그림이며, 그림과 결과가 링크를 아는 누구나 볼 수 있는 페이지에 올라가는 데 동의합니다.",
+    consent: "그림과 결과가 링크를 아는 누구나 볼 수 있는 페이지에 올라가는 데 동의합니다.",
     sending: "보내는 중…", send: "그림 보내기", offline: "지금은 작업실 PC가 꺼져 있습니다. 대기열에 올려 두면 켜지는 대로 처리합니다.",
-    preview: "고른 그림", previewAlt: "고른 그림", ready: "보낼 준비 완료", empty: "그림 한 장이면 됩니다",
+    previewAlt: "고른 그림", ready: "보낼 준비 완료",
     time: (k: Kind) => (k === "ground" ? "시작 후 1분 안쪽입니다." : k === "mech" ? "부품 2개를 만들어 시작 후 약 10~15분 걸립니다." : "시작 후 약 4~10분 걸립니다."),
     splitHandle: "자르는 선 (위·아래 화살표로 움직임)",
     trisTitle: "메시 밀도", trisLimit: "삼각형 수 제한 (권장)", tris: (k: Kind) => (k === "mech" ? "제한 삼각형 수 (두 부품 합계)" : "제한 삼각형 수"),
@@ -85,9 +85,9 @@ const COPY = {
     splitValue: (p: number) => `${p}% from the top`, front: "Which way the mechanism faces in the drawing", fronts: { viewer: "Toward me (front)", left: "Left", right: "Right" },
     size: "Tile side (cm)", sizeNote: "Up to 2040 cm. Place several tiles for a large floor.", repeat: "Pattern repeats", repeatNote: "4 to 8 for a tiling pattern, 1 for a single picture.",
     s3: () => "04 / BEFORE YOU SEND",
-    consent: "I own this drawing and agree that it and the result are published on a page anyone with the link can open.",
+    consent: "I agree that the drawing and the result are published on a page anyone with the link can open.",
     sending: "Sending…", send: "Send the drawing", offline: "The studio PC is offline. Your drawing will be queued and start when it is back.",
-    preview: "YOUR DRAWING", previewAlt: "The drawing you selected", ready: "Ready to send", empty: "One drawing is all it takes",
+    previewAlt: "The drawing you selected", ready: "Ready to send",
     time: (k: Kind) => (k === "ground" ? "Takes under a minute once it starts." : k === "mech" ? "Builds two parts, about 10 to 15 minutes once it starts." : "Takes about four to ten minutes once it starts."),
     splitHandle: "Split line (move with the up and down arrow keys)",
     trisTitle: "Mesh density", trisLimit: "Limit the triangle count (recommended)", tris: (k: Kind) => (k === "mech" ? "Triangle limit (both parts together)" : "Triangle limit"),
@@ -413,7 +413,7 @@ export function FbxCreateApp() {
       </div>
 
       <div className="creation-preview">
-        <span className="eyebrow">{t.preview}</span>
+        <p className="small-note">{t.time(kind)}</p>
         {imageUrl ? (
           kind === "mech" ? (
             <div className="fbx-split-wrap" ref={splitBox}
@@ -436,10 +436,7 @@ export function FbxCreateApp() {
             </div>
           ) : <img className="fbx-drawing-preview" src={imageUrl} alt={t.previewAlt} />
         ) : <div className="fbx-placeholder" aria-hidden="true" />}
-        <div>
-          <h3>{image ? t.ready : t.empty}</h3>
-          <p className="small-note">{t.time(kind)}</p>
-        </div>
+        <div>{image && <h3>{t.ready}</h3>}</div>
       </div>
     </div>
   );

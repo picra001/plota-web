@@ -20,8 +20,8 @@ export function FbxHome({ lang }: { lang: UiLang }) {
 }
 
 export function FbxCreate({ lang }: { lang: UiLang }) {
-  const t = lang === "ko" ? { eyebrow: "초대 전용", title: "만들기", text: "그림 한 장을 보내면 애니메이션이 들어간 FBX를 돌려드립니다." } : { eyebrow: "INVITE ONLY", title: "Create", text: "Send one drawing and get an animated FBX back." };
-  return <div className="product-container"><div className="page-heading"><p className="eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p>{t.text}</p></div><FbxCreateApp /></div>;
+  const t = lang === "ko" ? { eyebrow: "초대 전용", title: "만들기" } : { eyebrow: "INVITE ONLY", title: "Create" };
+  return <div className="product-container"><div className="page-heading"><p className="eyebrow">{t.eyebrow}</p><h1>{t.title}</h1></div><FbxCreateApp /></div>;
 }
 
 export function FbxJob() { return <div className="product-container"><FbxJobView /></div>; }
