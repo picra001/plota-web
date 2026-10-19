@@ -70,11 +70,11 @@ const KO: Guide = {
       </ul>
       <Callout tone="warn" title="새로 연 종류입니다"><p>정적 물체·움직이는 장치·바닥은 새로 열었습니다. 뼈대 없는 FBX를 스튜디오에 가져오는 절차와 결과는 확인하는 중이라, 이 설명서의 해당 부분이 바뀔 수 있습니다.</p></Callout>
       <h3>메시 밀도 (제한 삼각형 수)</h3>
-      <p>캐릭터·정적 물체·움직이는 장치는 <Ui>메시 밀도</Ui>의 <Ui>제한 삼각형 수</Ui> 슬라이더로 삼각형 수의 상한을 1,000 단위로 정할 수 있습니다. 기본값은 <b>종류마다 시험해서 확인한 값</b>입니다. 많을수록 둥근 면과 얇은 부분이 매끈해지지만, 시간이 더 걸리고 파일이 무거워집니다. 그림에 없던 뒷면이나 흐린 무늬는 삼각형 수로 나아지지 않습니다(뒷면은 그림 한 장으로 추측한 것이고, 텍스처는 512px 그대로입니다).</p>
+      <p>캐릭터·정적 물체·움직이는 장치는 <Ui>메시 밀도</Ui>의 <Ui>제한 삼각형 수</Ui> 슬라이더(500 단위)나 옆 숫자 칸(직접 입력)으로 삼각형 수의 상한을 정할 수 있습니다. 기본값은 <b>종류마다 시험해서 확인한 값</b>입니다. 많을수록 둥근 면과 얇은 부분이 매끈해지지만, 시간이 더 걸리고 파일이 무거워집니다. 그림에 없던 뒷면이나 흐린 무늬는 삼각형 수로 나아지지 않습니다(뒷면은 그림 한 장으로 추측한 것이고, 텍스처는 512px 그대로입니다).</p>
       <Table head={["종류", "검증된 값 (기본)", "범위"]} rows={[
-        [<b key="c">캐릭터</b>, "8,000", "1,000~50,000 (1,000 단위) 또는 제한 없음"],
-        [<b key="s">정적 물체</b>, "2,000", "1,000~50,000 (1,000 단위) 또는 제한 없음"],
-        [<b key="m">움직이는 장치</b>, "합계 7,000 (윗부분 4,000 · 받침 3,000)", "합계 1,000~50,000 (1,000 단위) 또는 제한 없음 · 윗부분 4 : 받침 3 으로 나눔"],
+        [<b key="c">캐릭터</b>, "8,000", "500~50,000 (슬라이더 500 단위, 직접 입력 가능) 또는 제한 없음"],
+        [<b key="s">정적 물체</b>, "2,000", "500~50,000 (슬라이더 500 단위, 직접 입력 가능) 또는 제한 없음"],
+        [<b key="m">움직이는 장치</b>, "합계 7,000 (윗부분 4,000 · 받침 3,000)", "합계 500~50,000 (슬라이더 500 단위, 직접 입력 가능) 또는 제한 없음 · 윗부분 4 : 받침 3 으로 나눔"],
       ]} />
       <ul>
         <li><b>OVERDARE 권장 상한은 FBX 1개당 삼각형 30,000개</b>입니다. 넘으면 스튜디오에서 Import 가 막힐 수 있습니다. 엔진에서 가볍게 쓰려면 3,000~8,000이 적당합니다.</li>
@@ -193,7 +193,7 @@ const KO: Guide = {
       ["그림 형식 / 크기", "PNG · JPG · WEBP / 10MB 이하"], ["그림당 대상", "1개 (캐릭터 1명, 물체 1개, 장치 1대)"], ["애니메이션 클립 (캐릭터)", "그림당 최대 4개 · 파일당 10MB 이하"],
       ["기본 제공 클립", "Walking · Salute"], ["처리 시간 (시작 후)", "바닥 1분 · 캐릭터·물체 4~10분 · 장치 10~15분"], ["동시 처리", "한 번에 1개 (차례대로)"],
       ["캐릭터 키 · 물체·장치 높이", "10~2000cm (기본 170 / 120 / 200)"], ["바닥 한 변 · 무늬 반복", "100~2040cm · 1~16회"],
-      ["제한 삼각형 수 (기본 = 검증값)", "캐릭터 8,000 · 물체 2,000 · 장치 합계 7,000 / 1,000~50,000 (1,000 단위) 또는 제한 없음"], ["OVERDARE 권장 상한", "FBX 1개당 삼각형 30,000"],
+      ["제한 삼각형 수 (기본 = 검증값)", "캐릭터 8,000 · 물체 2,000 · 장치 합계 7,000 / 500~50,000 (슬라이더 500 단위, 직접 입력 가능) 또는 제한 없음"], ["OVERDARE 권장 상한", "FBX 1개당 삼각형 30,000"],
       ["결과 모델", "FBX 1개당 메시 1개 · 텍스처 512px"], ["손가락 본", "자동 (가능할 때 한 손 15개)"],
     ]} /> },
     { id: "privacy", title: "공개와 삭제", body: <>
@@ -233,11 +233,11 @@ const EN: Guide = {
       </ul>
       <Callout tone="warn" title="Newly opened types"><p>Static objects, mechanisms, and ground are new. How skeleton-free FBX files import into the studio is still being checked, so these parts of the guide may change.</p></Callout>
       <h3>Mesh density (triangle limit)</h3>
-      <p>Characters, static objects, and mechanisms set an upper limit on triangles with the <Ui>Triangle limit</Ui> slider under <Ui>Mesh density</Ui>, in steps of 1,000. The default is <b>the value tested for each type</b>. More triangles make round surfaces and thin parts smoother, but take longer and make the file heavier. They do not fix a back side the drawing never showed or a blurry pattern: the back is guessed from one drawing, and the texture stays at 512 px.</p>
+      <p>Characters, static objects, and mechanisms set an upper limit on triangles with the <Ui>Triangle limit</Ui> slider under <Ui>Mesh density</Ui> (steps of 500) or by typing a number in the box next to it. The default is <b>the value tested for each type</b>. More triangles make round surfaces and thin parts smoother, but take longer and make the file heavier. They do not fix a back side the drawing never showed or a blurry pattern: the back is guessed from one drawing, and the texture stays at 512 px.</p>
       <Table head={["Type", "Tested value (default)", "Range"]} rows={[
-        [<b key="c">Character</b>, "8,000", "1,000–50,000 in steps of 1,000, or no limit"],
-        [<b key="s">Static object</b>, "2,000", "1,000–50,000 in steps of 1,000, or no limit"],
-        [<b key="m">Mechanism</b>, "7,000 in total (top 4,000 · base 3,000)", "1,000–50,000 in total, steps of 1,000, or no limit · split top 4 : base 3"],
+        [<b key="c">Character</b>, "8,000", "500–50,000 (slider in steps of 500, or type any number), or no limit"],
+        [<b key="s">Static object</b>, "2,000", "500–50,000 (slider in steps of 500, or type any number), or no limit"],
+        [<b key="m">Mechanism</b>, "7,000 in total (top 4,000 · base 3,000)", "500–50,000 in total (slider in steps of 500, or type any number), or no limit · split top 4 : base 3"],
       ]} />
       <ul>
         <li><b>The OVERDARE recommended limit is 30,000 triangles per FBX.</b> Above that, the studio may refuse to import it. For a light in-game asset, 3,000 to 8,000 is a good range.</li>
@@ -356,7 +356,7 @@ const EN: Guide = {
       ["Drawing format / size", "PNG · JPG · WEBP / 10 MB or less"], ["Subjects per drawing", "1 (one character, object, or mechanism)"], ["Animation clips (characters)", "Up to 4 per drawing · 10 MB each"],
       ["Built-in clips", "Walking · Salute"], ["Time (once started)", "Ground 1 min · character/object 4–10 min · mechanism 10–15 min"], ["Concurrency", "One at a time (in order)"],
       ["Character / object / mechanism height", "10–2000 cm (default 170 / 120 / 200)"], ["Ground side · pattern repeats", "100–2040 cm · 1–16"],
-      ["Triangle limit (default = tested value)", "Character 8,000 · object 2,000 · mechanism 7,000 total / 1,000–50,000 in steps of 1,000, or no limit"], ["OVERDARE recommended limit", "30,000 triangles per FBX"],
+      ["Triangle limit (default = tested value)", "Character 8,000 · object 2,000 · mechanism 7,000 total / 500–50,000 (slider in steps of 500, or type any number), or no limit"], ["OVERDARE recommended limit", "30,000 triangles per FBX"],
       ["Result model", "1 mesh per FBX · 512 px texture"], ["Finger bones", "Automatic (15 per hand when possible)"],
     ]} /> },
     { id: "privacy", title: "Sharing and removal", body: <>

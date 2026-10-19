@@ -55,7 +55,7 @@ const COPY = {
     time: (k: Kind) => (k === "ground" || k === "anim" ? "시작 후 1분 안쪽입니다." : k === "mech" ? "부품 2개를 만들어 시작 후 약 10~15분 걸립니다." : "시작 후 약 4~10분 걸립니다."),
     splitHandle: "자르는 선 (위·아래 화살표로 움직임)",
     trisTitle: "메시 밀도", trisLimit: "삼각형 수 제한 (권장)", tris: (k: Kind) => (k === "mech" ? "제한 삼각형 수 (두 부품 합계)" : "제한 삼각형 수"),
-    trisNote: (v: number) => `검증된 값 ${n(v)} · OVERDARE 권장 상한 ${n(OVERDARE_TRIS_LIMIT)} (FBX 1개당) · ${n(1000)} 단위로 최대 ${n(50000)}. 많을수록 형태는 매끈하지만 오래 걸리고 무거워집니다.`,
+    trisNote: (v: number) => `검증된 값 ${n(v)} · OVERDARE 권장 상한 ${n(OVERDARE_TRIS_LIMIT)} (FBX 1개당) · ${n(500)}~${n(50000)}, 슬라이더는 ${n(500)} 단위 · 옆 칸에 직접 입력 가능. 많을수록 형태는 매끈하지만 오래 걸리고 무거워집니다.`,
     trisReset: (v: number) => `검증된 값(${n(v)})으로 되돌리기`,
     trisMechSplit: (top: number, base: number) => `윗부분 ${n(top)} · 받침 ${n(base)} 으로 나눠 씁니다.`,
     warnTitle: "확인해 주세요",
@@ -102,7 +102,7 @@ const COPY = {
     time: (k: Kind) => (k === "ground" || k === "anim" ? "Takes under a minute once it starts." : k === "mech" ? "Builds two parts, about 10 to 15 minutes once it starts." : "Takes about four to ten minutes once it starts."),
     splitHandle: "Split line (move with the up and down arrow keys)",
     trisTitle: "Mesh density", trisLimit: "Limit the triangle count (recommended)", tris: (k: Kind) => (k === "mech" ? "Triangle limit (both parts together)" : "Triangle limit"),
-    trisNote: (v: number) => `Tested value ${n(v)} · OVERDARE recommended limit ${n(OVERDARE_TRIS_LIMIT)} per FBX · steps of ${n(1000)} up to ${n(50000)}. More triangles give smoother shapes but take longer and weigh more.`,
+    trisNote: (v: number) => `Tested value ${n(v)} · OVERDARE recommended limit ${n(OVERDARE_TRIS_LIMIT)} per FBX · ${n(500)} to ${n(50000)}, the slider moves in steps of ${n(500)} · or type a number in the box. More triangles give smoother shapes but take longer and weigh more.`,
     trisReset: (v: number) => `Back to the tested value (${n(v)})`,
     trisMechSplit: (top: number, base: number) => `Split as top ${n(top)} and base ${n(base)}.`,
     warnTitle: "Before you send",
@@ -119,8 +119,8 @@ const COPY = {
   },
 };
 
-/** 제한 삼각형 수 슬라이더 [최소, 최대, 단위]. API 는 500~50,000 을 받지만 사이트는 1,000 단위로 고른다. */
-const TRIS_SLIDER = [1000, 50000, 1000] as const;
+/** 제한 삼각형 수 슬라이더 [최소, 최대, 단위] = API 범위(500~50,000). 슬라이더는 500 단위, 옆 숫자 칸은 범위 안 아무 정수. */
+const TRIS_SLIDER = [500, 50000, 500] as const;
 
 function n(v: number): string {
   return Math.round(v).toLocaleString("en-US");
@@ -300,10 +300,16 @@ export function FbxCreateApp() {
       {!unlimited && (
         <>
           <label htmlFor="opt-tris">{t.tris(kind)}: <strong>{n(trisNum ?? trisDef)}</strong></label>
-          {/* 1,000 단위 슬라이더. 눈금 = 검증값·OVERDARE 권장 상한 */}
-          <input id="opt-tris" type="range" min={TRIS_SLIDER[0]} max={TRIS_SLIDER[1]} step={TRIS_SLIDER[2]} list="tris-marks"
-            value={trisNum ?? trisDef} aria-valuetext={n(trisNum ?? trisDef)}
-            onChange={e => setOpt(kind, "tris", Number(e.target.value))} />
+          {/* 500 단위 슬라이더 + 직접 입력 칸. 눈금 = 검증값·OVERDARE 권장 상한. 입력 칸은 칸을 벗어날 때 범위 안 정수로 맞춘다 */}
+          <div className="fbx-tris-row">
+            <input id="opt-tris" type="range" min={TRIS_SLIDER[0]} max={TRIS_SLIDER[1]} step={TRIS_SLIDER[2]} list="tris-marks"
+              value={trisNum ?? trisDef} aria-valuetext={n(trisNum ?? trisDef)}
+              onChange={e => setOpt(kind, "tris", Number(e.target.value))} />
+            <input className="fbx-input" type="number" inputMode="numeric" min={TRIS_SLIDER[0]} max={TRIS_SLIDER[1]} step={TRIS_SLIDER[2]}
+              aria-label={t.tris(kind)} value={trisRaw ?? ""}
+              onChange={e => setOpt(kind, "tris", e.target.value === "" ? undefined : Number(e.target.value))}
+              onBlur={() => setOpt(kind, "tris", clampNum(Math.round(Number(trisRaw) || trisDef), [TRIS_SLIDER[0], TRIS_SLIDER[1]]))} />
+          </div>
           <datalist id="tris-marks">
             <option value={trisDef} />
             <option value={OVERDARE_TRIS_LIMIT} />
