@@ -11,21 +11,29 @@ export const LIBRARY_CLIPS = ["Walking", "Salute"];
 export const DEFAULT_CLIP = "Walking";
 
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+/** 애니메이션 추가제작에 올리는 캐릭터 FBX (apps/fbx-api MAX_CHAR_FBX_BYTES) */
+export const MAX_CHAR_FBX_BYTES = 60 * 1024 * 1024;
 export const MAX_CLIP_BYTES = 10 * 1024 * 1024;
 export const MAX_CLIPS = 4;
 
 export type JobStatus = "queued" | "running" | "done" | "failed";
 
-/** 만들 것의 종류. character 외에는 뼈대·애니메이션이 없는 FBX. 값 범위는 apps/fbx-api KIND_OPTIONS 와 같게. */
-export type Kind = "character" | "static" | "mech" | "ground";
-export const KINDS: Kind[] = ["character", "static", "mech", "ground"];
+/** 만들 것의 종류. static·mech·ground 는 뼈대·애니메이션이 없는 FBX. 값 범위는 apps/fbx-api KIND_OPTIONS 와 같게.
+ *  anim = 애니메이션 추가제작(2026-10-19): 그림 대신 이 사이트에서 받은 캐릭터 FBX + Mixamo 클립. */
+export type Kind = "character" | "static" | "mech" | "ground" | "anim";
+export const KINDS: Kind[] = ["character", "static", "mech", "ground", "anim"];
+/** 동작 클립을 고르는 종류 */
+export function hasClips(kind: Kind): boolean {
+  return kind === "character" || kind === "anim";
+}
 export type Tris = number | "unlimited";
 export type KindOptions = { height_cm?: number; split?: number; front?: "viewer" | "left" | "right"; size_cm?: number; uv_repeat?: number; tris?: Tris };
 export const KIND_DEFAULTS: Record<Kind, KindOptions> = {
-  character: { tris: 8000 },
+  character: { tris: 8000, height_cm: 170 },
   static: { height_cm: 120, tris: 2000 },
   mech: { height_cm: 200, split: 0.5, front: "viewer", tris: 7000 },
   ground: { size_cm: 2000, uv_repeat: 1 },
+  anim: {},
 };
 export const OPTION_RANGES = { height_cm: [10, 2000], size_cm: [100, 2040], uv_repeat: [1, 16], tris: [500, 50000] } as const;
 /** 삼각형 수(메시 밀도). 기본값 = 종류별 검증값(KIND_DEFAULTS.tris). OVERDARE 는 FBX 1개당 30,000 이 상한. */
@@ -53,7 +61,7 @@ export type Job = {
   finished_at: number | null;
   title: string | null;
   public: boolean;
-  input_url: string;
+  input_url: string | null;
   files: Record<string, string>;
   kind?: Kind;
   options?: KindOptions | null;
@@ -125,11 +133,12 @@ export async function submitJob(input: SubmitInput): Promise<SubmitResult> {
   form.set("invite", input.invite.trim());
   form.set("consent", "1");
   form.set("public", input.isPublic ? "1" : "0");
-  form.set("image", input.image, input.image.name || "drawing.png");
   const kind = input.kind ?? "character";
+  if (kind === "anim") form.set("fbx", input.image, input.image.name || "character.fbx");
+  else form.set("image", input.image, input.image.name || "drawing.png");
   form.set("kind", kind);
-  if (input.options) form.set("options", JSON.stringify(input.options));
-  if (kind !== "character") return request<SubmitResult>("/jobs", { method: "POST", body: form });
+  if (input.options && Object.keys(input.options).length) form.set("options", JSON.stringify(input.options));
+  if (!hasClips(kind)) return request<SubmitResult>("/jobs", { method: "POST", body: form });
   const names = [...input.clips];
   for (const u of input.uploads ?? []) if (!names.includes(u.name)) names.push(u.name);
   if (names.length) {
@@ -236,11 +245,11 @@ export function savedInvite(): string {
 const STEP_LABELS: Record<UiLang, Record<string, string>> = {
   ko: {
     claim: "시작하는 중", input: "그림 준비 중", build: "3D 모양 만드는 중", mesh_check: "메시 점검 중", rerig: "뼈대 맞추는 중",
-    finalize: "엔진용으로 정리 중", convert: "축 변환 중", anim: "애니메이션 붙이는 중", export: "FBX로 정리하는 중", upload: "파일 올리는 중", done: "완료", failed: "중단됨",
+    finalize: "엔진용으로 정리 중", convert: "축 변환 중", anim_start: "애니메이션 붙이는 중", anim: "애니메이션 붙이는 중", export: "FBX로 정리하는 중", upload: "파일 올리는 중", done: "완료", failed: "중단됨",
   },
   en: {
     claim: "Getting started", input: "Preparing your drawing", build: "Building the 3D shape", mesh_check: "Checking the mesh", rerig: "Fitting the skeleton",
-    finalize: "Preparing it for the engine", convert: "Converting the axes", anim: "Adding the animation", export: "Writing the FBX", upload: "Uploading your files", done: "Finished", failed: "Stopped",
+    finalize: "Preparing it for the engine", convert: "Converting the axes", anim_start: "Adding the animation", anim: "Adding the animation", export: "Writing the FBX", upload: "Uploading your files", done: "Finished", failed: "Stopped",
   },
 };
 
@@ -253,6 +262,7 @@ export function stepLabel(job: Pick<Job, "status" | "step">, lang: UiLang): stri
 export function fileLabel(name: string, lang: UiLang): string {
   const ko = lang === "ko";
   if (name === "final.fbx") return ko ? "FBX" : "FBX";
+  if (name === "all_anims.fbx") return ko ? "모든 동작을 묶은 FBX" : "FBX with every clip";
   if (name === "preview.glb") return ko ? "GLB 미리보기" : "GLB preview";
   if (name === "preview.png") return ko ? "원본 그림" : "Source image";
   if (name === "thumb.webp") return ko ? "썸네일" : "Thumbnail";
@@ -284,6 +294,7 @@ export function kindLabel(kind: Kind | undefined, lang: UiLang): string {
     case "static": return ko ? "정적 물체" : "Static object";
     case "mech": return ko ? "움직이는 장치" : "Mechanism";
     case "ground": return ko ? "바닥" : "Ground";
+    case "anim": return ko ? "애니메이션 추가제작" : "Add animations";
     default: return ko ? "캐릭터" : "Character";
   }
 }

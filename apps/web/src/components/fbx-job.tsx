@@ -30,7 +30,8 @@ const COPY = {
       height: "높이", size: "바닥 한 변", repeat: "무늬 반복", split: "자르는 높이", splitV: (p: number) => `위에서 ${p}%`,
       tris: "제한 삼각형 수", trisUnlimited: "제한 없음", trisTested: "검증값",
       asked: "요청", made: "만들어진 결과", realTris: "삼각형 수", realTrisMech: "삼각형 수 (두 파트 합)", realSize: "크기 (가로×깊이×높이)", realGround: "크기 (가로×세로)" },
-    yoursKind: { character: "내 캐릭터", static: "내 물체", mech: "내 장치", ground: "내 바닥" } as Record<string, string>,
+    yoursKind: { character: "내 캐릭터", static: "내 물체", mech: "내 장치", ground: "내 바닥", anim: "동작을 더한 캐릭터" } as Record<string, string>,
+    allNote: "모든 동작을 묶은 FBX 는 동작마다 테이크(애니메이션)가 하나씩 들어 있습니다. 스튜디오에서 여러 동작을 한 번에 가져오는지는 아직 확인 중입니다.",
     mechNote: "받침(고정)과 윗부분(움직임) FBX를 둘 다 받아 스튜디오에서 한 모델로 묶으세요. 윗부분의 원점이 회전축입니다.",
     footer: "링크를 아는 사람은 누구나 이 페이지를 열고 파일을 받을 수 있습니다.",
   },
@@ -50,7 +51,8 @@ const COPY = {
       height: "Height", size: "Tile side", repeat: "Pattern repeats", split: "Split height", splitV: (p: number) => `${p}% from the top`,
       tris: "Triangle limit", trisUnlimited: "No limit", trisTested: "tested value",
       asked: "Requested", made: "What was made", realTris: "Triangles", realTrisMech: "Triangles (both parts)", realSize: "Size (W×D×H)", realGround: "Size (W×L)" },
-    yoursKind: { character: "Your character", static: "Your object", mech: "Your mechanism", ground: "Your ground" } as Record<string, string>,
+    yoursKind: { character: "Your character", static: "Your object", mech: "Your mechanism", ground: "Your ground", anim: "Character with added clips" } as Record<string, string>,
+    allNote: "The FBX with every clip has one take (animation) per clip. Whether the studio imports several clips at once is still being checked.",
     mechNote: "Download both the base (fixed) and the top (moving) FBX and group them as one model in the studio. The top's origin is its pivot.",
     footer: "Anyone with this link can open this page and download the files.",
   },
@@ -125,6 +127,7 @@ function Downloads({ job }: { job: Job }) {
   const clips = [...clipFiles(job.files)].sort((a, b) => Number(b.clip === job.anim_default) - Number(a.clip === job.anim_default));
   const glb = job.files["preview.glb"];
   const parts = (["parts/base.fbx", "parts/top.fbx"] as const).filter(n => job.files[n]);
+  const all = job.files["all_anims.fbx"];
   return (
     <div className="fbx-downloads">
       {main && <a className="button primary wide" href={main} download>{t.download(fileLabel("final.fbx", lang))}</a>}
@@ -137,6 +140,8 @@ function Downloads({ job }: { job: Job }) {
           {t.clip(c.clip)}{c.clip === job.anim_default ? t.alsoMain : ""}
         </a>
       ))}
+      {all && <a className="button outline wide" href={all} download>{t.download(fileLabel("all_anims.fbx", lang))}</a>}
+      {all && <p className="small-note">{t.allNote}</p>}
       {glb && <a className="button outline wide" href={glb} download>{t.download(fileLabel("preview.glb", lang))}</a>}
     </div>
   );
@@ -278,7 +283,7 @@ export function FbxJobView() {
   {
     // 삼각형 수: 옵션이 없으면(기존 작업·캐릭터 기본) 검증값
     const kind = job.kind ?? "character";
-    const def = KIND_DEFAULTS[kind]?.tris;
+    const def = KIND_DEFAULTS[kind]?.tris;      // anim 은 삼각형 옵션이 없다(입력 FBX 그대로)
     const tr = job.options?.tris ?? def;
     if (tr !== undefined) facts.push([t.facts.tris, tr === "unlimited" ? t.facts.trisUnlimited : `${Number(tr).toLocaleString("en-US")}${tr === def ? ` (${t.facts.trisTested})` : ""}`]);
   }
@@ -315,7 +320,9 @@ export function FbxJobView() {
         <div className="fbx-job-stage">
           {job.status === "done"
             ? <Viewer job={job} />
-            : <img className="fbx-drawing-preview" src={inputImageUrl(job.id)} alt={t.sentAlt} />}
+            : job.input_url === null
+              ? <div className="fbx-placeholder" aria-hidden="true" />
+              : <img className="fbx-drawing-preview" src={inputImageUrl(job.id)} alt={t.sentAlt} />}
         </div>
 
         <div className="fbx-job-side">

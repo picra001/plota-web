@@ -6,6 +6,7 @@
  *
  * R2 키 배치
  *   priv/jobs/<id>/input.png            원본 입력 (공개 도메인 대신 이 Worker 가 중계)
+ *   priv/jobs/<id>/input.fbx            애니메이션 추가제작(kind=anim) 입력 캐릭터 FBX (2026-10-19)
  *   priv/jobs/<id>/clips/<name>.fbx     사용자가 올린 Mixamo 클립
  *   p/<id>/<name>                       산출물 (assets.plota.ai/p/<id>/... 로 공개)
  */
@@ -28,16 +29,19 @@ export interface Env {
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_FBX_BYTES = 10 * 1024 * 1024;
+/** 애니메이션 추가제작에 올리는 캐릭터 FBX (이 서비스 산출물은 보통 1~2MB, 삼각형을 크게 잡으면 수십 MB) */
+const MAX_CHAR_FBX_BYTES = 60 * 1024 * 1024;
 const MAX_CLIPS = 4;
 const CLIP_NAME_RE = /^[A-Za-z0-9_-]{1,64}$/;
 /** 워커가 올릴 수 있는 산출물 이름 (4개 + 클립별 FBX + 장치 부품 FBX) */
-const OUT_NAME_RE = /^(final\.fbx|preview\.glb|preview\.png|thumb\.webp|anims\/[A-Za-z0-9_-]{1,64}_ovdr\.fbx|parts\/(top|base)\.fbx)$/;
+const OUT_NAME_RE = /^(final\.fbx|all_anims\.fbx|preview\.glb|preview\.png|thumb\.webp|anims\/[A-Za-z0-9_-]{1,64}_ovdr\.fbx|parts\/(top|base)\.fbx)$/;
 
 /**
  * 작업 종류 (2026-10-18). character = 기존 캐릭터(리깅+애니). 나머지는 본 없는 FBX.
  * 옵션 범위는 집 PC 워커(comfyui-docker ovdr/server/worker.py KIND_DEFAULTS·kind_options)와 같게 유지한다.
  */
-const KINDS = ['character', 'static', 'mech', 'ground'] as const;
+/** anim = 애니메이션 추가제작(2026-10-19): 이미지 대신 이 서비스가 만든 캐릭터 FBX + Mixamo 클립 → 클립별 FBX + 묶음 FBX */
+const KINDS = ['character', 'static', 'mech', 'ground', 'anim'] as const;
 type Kind = (typeof KINDS)[number];
 type OptSpec = { min?: number; max?: number; def: number | string; values?: string[]; also?: string[] };
 /**
@@ -46,10 +50,11 @@ type OptSpec = { min?: number; max?: number; def: number | string; values?: stri
  */
 const TRIS = (def: number): OptSpec => ({ min: 500, max: 50000, def, also: ['unlimited'] });
 const KIND_OPTIONS: Record<Kind, Record<string, OptSpec>> = {
-	character: { tris: TRIS(8000) },
+	character: { tris: TRIS(8000), height_cm: { min: 10, max: 2000, def: 170 } }, // height_cm = 캐릭터 키(2026-10-19, 워커 fbx_finalize --height-cm)
 	static: { height_cm: { min: 10, max: 2000, def: 120 }, tris: TRIS(2000) },
 	mech: { height_cm: { min: 10, max: 2000, def: 200 }, split: { min: 0.05, max: 0.95, def: 0.5 }, front: { def: 'viewer', values: ['viewer', 'left', 'right'] }, tris: TRIS(7000) },
 	ground: { size_cm: { min: 100, max: 2040, def: 2000 }, uv_repeat: { min: 1, max: 16, def: 1 } },
+	anim: {},
 };
 
 /** 종류별 옵션 정리 — 범위 밖 값은 오류, 빠진 값은 기본값. 키 순서를 고정해 중복 판정 문자열을 안정시킨다.
@@ -88,6 +93,9 @@ function parseKindOptions(kind: Kind, raw: string | null): { options: Record<str
 		out[k] = k === 'tris' ? Math.round(n) : Math.round(n * 1000) / 1000;
 	}
 	if (kind === 'character' && Object.entries(KIND_OPTIONS.character).every(([k, spec]) => out[k] === spec.def)) return { options: null };
+	// 캐릭터 키가 기본값이면 빼서, 키 옵션이 생기기 전 작업({tris})과 중복 판정이 이어지게 한다.
+	if (kind === 'character' && out.height_cm === KIND_OPTIONS.character.height_cm.def) delete out.height_cm;
+	if (!Object.keys(out).length) return { options: null };
 	return { options: out };
 }
 
@@ -336,7 +344,7 @@ async function publicView(env: Env, row: JobRow) {
 		finished_at: row.finished_at,
 		title: row.title,
 		public: Boolean(row.public),
-		input_url: `/jobs/${row.id}/input.png`,
+		input_url: row.kind === 'anim' ? null : `/jobs/${row.id}/input.png`,
 		files: fileUrls(env, row),
 		kind: row.kind || 'character',
 		options: parseObj(row.options),
@@ -371,29 +379,34 @@ async function createJob(req: Request, env: Env): Promise<Response> {
 		return err(400, 'no_consent', '공개 게시 동의(consent=1)가 필요합니다');
 	}
 
-	const image = asFile(form.get('image'));
-	if (!image) return err(400, 'no_image', 'image 파일이 없습니다');
-	if (image.size > MAX_IMAGE_BYTES) return err(413, 'image_too_large', `이미지는 ${MAX_IMAGE_BYTES / 1024 / 1024}MB 이하`);
-	const imageBytes = new Uint8Array(await image.arrayBuffer());
-	if (!imageKind(imageBytes.subarray(0, 16))) return err(415, 'bad_image', 'PNG·JPG·WEBP 만 받습니다');
-
-	// 작업 종류·옵션 (2026-10-18). 캐릭터가 아니면 애니메이션 요청·클립은 받지 않는다.
+	// 작업 종류·옵션 (2026-10-18). 캐릭터·애니 추가제작이 아니면 애니메이션 요청·클립은 받지 않는다.
 	const kindRaw = String(form.get('kind') ?? 'character').trim() || 'character';
 	if (!(KINDS as readonly string[]).includes(kindRaw)) return err(400, 'bad_kind', `kind 는 ${KINDS.join('/')} 중 하나`);
 	const kind = kindRaw as Kind;
+	const withClips = kind === 'character' || kind === 'anim';
+
+	// 입력: 그림(PNG·JPG·WEBP) — anim 은 캐릭터 FBX (fbx 필드)
+	const image = asFile(form.get(kind === 'anim' ? 'fbx' : 'image'));
+	if (!image) return err(400, kind === 'anim' ? 'no_fbx' : 'no_image', kind === 'anim' ? 'fbx 파일이 없습니다' : 'image 파일이 없습니다');
+	const maxIn = kind === 'anim' ? MAX_CHAR_FBX_BYTES : MAX_IMAGE_BYTES;
+	if (image.size > maxIn) return err(413, kind === 'anim' ? 'fbx_too_large' : 'image_too_large', `${kind === 'anim' ? '캐릭터 FBX' : '이미지'}는 ${maxIn / 1024 / 1024}MB 이하`);
+	const imageBytes = new Uint8Array(await image.arrayBuffer());
+	if (kind === 'anim') {
+		if (!looksLikeFbx(imageBytes.subarray(0, 1024))) return err(415, 'bad_fbx', 'FBX 파일이 아닙니다');
+	} else if (!imageKind(imageBytes.subarray(0, 16))) return err(415, 'bad_image', 'PNG·JPG·WEBP 만 받습니다');
 	const opt = parseKindOptions(kind, typeof form.get('options') === 'string' ? (form.get('options') as string) : null);
 	if (opt.error) return err(400, 'bad_options', opt.error);
 	const optionsText = opt.options ? JSON.stringify(opt.options) : null;
 
 	// 요청서(inbox json 과 동일 형식)
-	const parsed = parseAnimSpec(kind === 'character' && typeof form.get('anims') === 'string' ? (form.get('anims') as string) : null);
+	const parsed = parseAnimSpec(withClips && typeof form.get('anims') === 'string' ? (form.get('anims') as string) : null);
 	if (parsed.error) return err(400, 'bad_anims', parsed.error);
 
 	// 사용자 업로드 클립: clip_<이름> 필드. 이름은 요청서의 클립 이름과 맞춰야 한다.
 	const uploads: { name: string; bytes: Uint8Array }[] = [];
 	for (const [key, value] of form.entries()) {
 		const clip = asFile(value);
-		if (!key.startsWith('clip_') || !clip || kind !== 'character') continue;
+		if (!key.startsWith('clip_') || !clip || !withClips) continue;
 		const name = key.slice(5);
 		if (!CLIP_NAME_RE.test(name)) return err(400, 'bad_clip_name', `클립 이름 형식 오류: ${name.slice(0, 32)}`);
 		if (clip.size > MAX_FBX_BYTES) return err(413, 'clip_too_large', `클립 FBX 는 ${MAX_FBX_BYTES / 1024 / 1024}MB 이하`);
@@ -406,11 +419,13 @@ async function createJob(req: Request, env: Env): Promise<Response> {
 	// 업로드한 클립은 요청서에 없어도 쓰도록 목록에 넣는다 (워커가 첨부로 인식)
 	const spec = parsed.spec ?? { anims: [] as string[] };
 	for (const u of uploads) if (!spec.anims.includes(u.name)) spec.anims.push(u.name);
+	if (kind === 'anim' && !spec.anims.length) return err(400, 'no_clips', '붙일 애니메이션 클립을 1개 이상 고르거나 올려 주세요');
 
 	// 중복 제거 — 같은 이미지·같은 종류·같은 옵션이면 기존 작업을 돌려준다.
 	// 실패한 작업과 숨긴 작업은 제외: 그러면 같은 그림을 다시 넣어 재시도할 수 있다(크래시 재시도를 안 하므로 더 중요하다).
 	const sha = await sha256Hex(imageBytes);
-	const dup = await env.DB.prepare(
+	// anim 은 같은 FBX 라도 클립이 달라지므로 중복 판정을 하지 않는다 (GPU 를 안 써서 다시 해도 수십 초).
+	const dup = kind === 'anim' ? null : await env.DB.prepare(
 		"SELECT id, status FROM jobs WHERE input_sha256 = ? AND COALESCE(kind,'character') = ? AND COALESCE(options,'') = ? AND hidden = 0 AND status IN ('queued','running','done') ORDER BY created_at DESC LIMIT 1"
 	)
 		.bind(sha, kind, optionsText ?? '')
@@ -425,7 +440,9 @@ async function createJob(req: Request, env: Env): Promise<Response> {
 	const ownerToken = randomToken();
 	const now = Date.now();
 
-	await env.BUCKET.put(`priv/jobs/${id}/input.png`, imageBytes, { httpMetadata: { contentType: 'image/png' } });
+	await env.BUCKET.put(`priv/jobs/${id}/input.${kind === 'anim' ? 'fbx' : 'png'}`, imageBytes, {
+		httpMetadata: { contentType: kind === 'anim' ? 'application/octet-stream' : 'image/png' },
+	});
 	const uploadMeta: { name: string; bytes: number }[] = [];
 	for (const u of uploads) {
 		await env.BUCKET.put(`priv/jobs/${id}/clips/${u.name}.fbx`, u.bytes, {
@@ -502,10 +519,11 @@ async function claim(env: Env): Promise<Response> {
 	return json({ job: null });
 }
 
-async function sendInput(env: Env, id: string): Promise<Response> {
-	const obj = await env.BUCKET.get(`priv/jobs/${id}/input.png`);
-	if (!obj) return err(404, 'not_found', '입력 이미지가 없습니다');
-	return new Response(obj.body, { headers: { 'content-type': 'image/png', 'cache-control': 'no-store' } });
+async function sendInput(env: Env, id: string, kind: string | null = null): Promise<Response> {
+	const fbx = kind === 'anim';
+	const obj = await env.BUCKET.get(`priv/jobs/${id}/input.${fbx ? 'fbx' : 'png'}`);
+	if (!obj) return err(404, 'not_found', fbx ? '입력 FBX 가 없습니다' : '입력 이미지가 없습니다');
+	return new Response(obj.body, { headers: { 'content-type': fbx ? 'application/octet-stream' : 'image/png', 'cache-control': 'no-store' } });
 }
 
 async function sendClip(env: Env, id: string, name: string): Promise<Response> {
@@ -673,6 +691,7 @@ async function admin(req: Request, env: Env, id: string): Promise<Response> {
 		const listed = await env.BUCKET.list({ prefix: `p/${id}/` });
 		for (const o of listed.objects) await env.BUCKET.delete(o.key);
 		await env.BUCKET.delete(`priv/jobs/${id}/input.png`);
+		await env.BUCKET.delete(`priv/jobs/${id}/input.fbx`);
 		await env.DB.prepare('DELETE FROM jobs WHERE id=?').bind(id).run();
 		return json({ ok: true, deleted: true });
 	}
@@ -718,7 +737,7 @@ async function route(req: Request, env: Env): Promise<Response> {
 		}
 		if (seg[1] === 'jobs' && seg[2]) {
 			const id = seg[2];
-			if (seg[3] === 'input' && m === 'GET') return sendInput(env, id);
+			if (seg[3] === 'input' && m === 'GET') return sendInput(env, id, (await getJob(env, id))?.kind ?? null);
 			if (seg[3] === 'clips' && seg[4] && m === 'GET') return sendClip(env, id, seg[4]);
 			if (seg[3] === 'progress' && m === 'POST') return reportProgress(req, env, id);
 			if (seg[3] === 'files' && seg.length >= 5 && m === 'PUT') return putFile(req, env, id, seg.slice(4).join('/'));
@@ -763,7 +782,7 @@ async function route(req: Request, env: Env): Promise<Response> {
 		const row = await getJob(env, id);
 		if (!row || row.hidden) return err(404, 'not_found', '작업이 없습니다');
 
-		if (seg[2] === 'input.png' && m === 'GET') return sendInput(env, id);
+		if (seg[2] === 'input.png' && m === 'GET') return row.kind === 'anim' ? err(404, 'not_found', '입력 이미지가 없습니다') : sendInput(env, id);
 		if (seg.length === 2 && m === 'GET') return json(await publicView(env, row));
 		if (seg.length === 2 && m === 'PATCH') {
 			const given = bearer(req);

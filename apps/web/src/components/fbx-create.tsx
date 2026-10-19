@@ -5,8 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { isLocale } from "@/lib/i18n";
 import { useUiLang } from "./localized-link";
 import {
-  DEFAULT_CLIP, KIND_DEFAULTS, KINDS, LIBRARY_CLIPS, MAX_CLIPS, MAX_CLIP_BYTES, MAX_IMAGE_BYTES, OPTION_RANGES,
-  OVERDARE_TRIS_LIMIT, MECH_TOP_SHARE, hasTris, largestPartTris,
+  DEFAULT_CLIP, KIND_DEFAULTS, KINDS, LIBRARY_CLIPS, MAX_CHAR_FBX_BYTES, MAX_CLIPS, MAX_CLIP_BYTES, MAX_IMAGE_BYTES, OPTION_RANGES,
+  OVERDARE_TRIS_LIMIT, MECH_TOP_SHARE, hasClips, hasTris, largestPartTris,
   FbxApiError, getHealth, rememberInvite, rememberJob, savedInvite, submitJob,
   type Kind, type KindOptions,
 } from "@/lib/fbx-api";
@@ -33,13 +33,18 @@ const COPY = {
       static: { name: "정적 물체", desc: "나무, 테이블, 상자처럼 놓아두는 물체. 뼈대 없는 FBX 1개.", tip: "물체 하나만, 비스듬한 각도에서 형태가 잘 보이는 그림이 좋습니다." },
       mech: { name: "움직이는 장치", desc: "포탑처럼 윗부분이 회전축으로 따로 움직이는 장치. 받침·윗부분 FBX 2개.", tip: "측면이나 정면에서 받침과 윗부분의 경계가 수평으로 보이는 그림이 좋습니다." },
       ground: { name: "바닥", desc: "바닥 무늬 그림을 평평한 바닥 판 FBX로. 1분 안쪽.", tip: "위에서 내려다본 바닥 무늬 그림. 가운데 정사각형을 씁니다." },
+      anim: { name: "애니메이션 추가제작", desc: "여기서 받은 캐릭터 FBX에 빠뜨린 Mixamo 동작을 더 붙여 다시 받습니다. 리깅은 다시 하지 않아 1분 안쪽.", tip: "결과 페이지에서 받은 FBX(메인 또는 클립 FBX 아무거나)를 올리세요. 다른 곳에서 만든 FBX는 안 됩니다." },
     } as Record<Kind, { name: string; desc: string; tip: string }>,
     s1: "02 / 그림", invite: "초대 코드", invitePh: "받은 코드를 입력하세요", drawing: "그림",
     drop: "PNG·JPG·WEBP 파일을 끌어다 놓거나 고르세요. 10MB 이하.", choose: "파일 고르기", chooseAgain: "다른 파일 고르기",
+    s1Fbx: "02 / 캐릭터 FBX", fbxLabel: "캐릭터 FBX", dropFbx: "이 사이트에서 받은 캐릭터 FBX를 끌어다 놓거나 고르세요. 60MB 이하.",
+    badFbx: "FBX 파일만 올릴 수 있습니다.", fbxBig: (mb: number) => `캐릭터 FBX는 ${mb}MB 이하여야 합니다.`, needClip: "붙일 동작을 1개 이상 고르거나 올려 주세요.",
+    s2Anim: "03 / 더 붙일 동작", sendFbx: "동작 붙이기", fbxReady: "보낼 준비 완료", allNote: "동작마다 FBX를 따로 받고, 2개 이상이면 모든 동작을 한 파일에 묶은 FBX도 받습니다.",
     s2: "03 / 애니메이션", clips: "넣을 동작", yours: "내 파일", remove: "빼기", addClip: "Mixamo FBX 클립 추가",
     mainClip: "메인 FBX에 넣을 동작", clipNote: (n: number) => `Mixamo 에서 FBX Binary · With Skin · 30fps 로 받아 주세요. 최대 ${n}개.`,
     s2opt: "03 / 크기와 설정",
     height: "높이 (cm)", heightNote: "스튜디오에 들어갔을 때의 전체 높이. 비워 두면 기본값.",
+    charHeight: "키 (cm)", charHeightNote: "스튜디오에 들어갔을 때 머리 꼭대기까지의 키. 기본 170cm(사람 크기). 비워 두면 기본값.",
     mechHeight: "전체 높이 (cm)", split: "자르는 높이", splitNote: "오른쪽 그림의 선을 끌어 받침과 윗부분의 경계에 맞추세요. 윗부분은 이 높이를 회전축으로 돕니다.",
     splitValue: (p: number) => `위에서 ${p}%`, front: "그림 속 장치가 바라보는 쪽", fronts: { viewer: "나를 봄 (정면)", left: "왼쪽", right: "오른쪽" },
     size: "바닥 한 변 (cm)", sizeNote: "최대 2040cm. 넓은 바닥은 여러 장을 이어 붙이세요.", repeat: "무늬 반복 횟수", repeatNote: "타일 무늬면 4~8, 한 장 그림이면 1.",
@@ -47,7 +52,7 @@ const COPY = {
     consent: "그림과 결과가 링크를 아는 누구나 볼 수 있는 페이지에 올라가는 데 동의합니다.",
     sending: "보내는 중…", send: "그림 보내기", offline: "지금은 작업실 PC가 꺼져 있습니다. 대기열에 올려 두면 켜지는 대로 처리합니다.",
     previewAlt: "고른 그림", ready: "보낼 준비 완료",
-    time: (k: Kind) => (k === "ground" ? "시작 후 1분 안쪽입니다." : k === "mech" ? "부품 2개를 만들어 시작 후 약 10~15분 걸립니다." : "시작 후 약 4~10분 걸립니다."),
+    time: (k: Kind) => (k === "ground" || k === "anim" ? "시작 후 1분 안쪽입니다." : k === "mech" ? "부품 2개를 만들어 시작 후 약 10~15분 걸립니다." : "시작 후 약 4~10분 걸립니다."),
     splitHandle: "자르는 선 (위·아래 화살표로 움직임)",
     trisTitle: "메시 밀도", trisLimit: "삼각형 수 제한 (권장)", tris: (k: Kind) => (k === "mech" ? "제한 삼각형 수 (두 부품 합계)" : "제한 삼각형 수"),
     trisNote: (v: number) => `검증된 값 ${n(v)} · OVERDARE 권장 상한 ${n(OVERDARE_TRIS_LIMIT)} (FBX 1개당) · ${n(1000)} 단위로 최대 ${n(50000)}. 많을수록 형태는 매끈하지만 오래 걸리고 무거워집니다.`,
@@ -59,6 +64,7 @@ const COPY = {
       static: (v: number) => `검증된 값(${n(v)})과 다릅니다. 정적 물체는 ${n(v)} 기준으로만 시험했습니다. 형태는 매끈해질 수 있지만 시간이 더 걸리고 파일이 커집니다.`,
       mech: (v: number) => `검증된 값(합계 ${n(v)} = 윗부분 4,000 · 받침 3,000)과 다릅니다. 장치는 이 값으로만 시험했습니다. 두 부품의 이음새·회전축 위치는 그대로지만 시간이 더 걸립니다.`,
       ground: () => "",
+      anim: () => "",
     } as Record<Kind, (v: number) => string>,
     warnLimit: (t: number) => `FBX 1개에 삼각형 약 ${n(t)}개 — OVERDARE 권장 상한 ${n(OVERDARE_TRIS_LIMIT)} 을 넘습니다. 스튜디오에서 Import 가 막힐 수 있습니다.`,
     warnUnlimited: "제한 없음: TRELLIS 가 만든 메시를 줄이지 않고 그대로 씁니다(보통 수십만~수백만 삼각형 — 모래주머니 시험에서 368만 개, FBX 136MB). OVERDARE 에는 그대로 넣을 수 없고, 시간이 몇 배로 늘며, 결과 페이지의 3D 미리보기는 나오지 않을 수 있습니다(파일은 내려받을 수 있음).",
@@ -74,13 +80,18 @@ const COPY = {
       static: { name: "Static object", desc: "Something that stays put: a tree, a table, a crate. One FBX, no skeleton.", tip: "One object, drawn from an angle that shows its shape." },
       mech: { name: "Mechanism", desc: "A turret or anything whose top turns on a pivot. Two FBX files: base and top.", tip: "A side or front view where the line between base and top is level." },
       ground: { name: "Ground", desc: "A floor pattern turned into a flat ground tile FBX. Under a minute.", tip: "A top-down floor pattern. The center square is used." },
+      anim: { name: "Add animations", desc: "Add the Mixamo clips you left out to a character FBX you got here, and download it again. No re-rigging, under a minute.", tip: "Upload an FBX from a result page (the main FBX or any clip FBX). FBX files made elsewhere will not work." },
     } as Record<Kind, { name: string; desc: string; tip: string }>,
     s1: "02 / DRAWING", invite: "Invite code", invitePh: "Enter the code you were given", drawing: "Drawing",
     drop: "Drop a PNG, JPG, or WEBP here, or choose a file. Up to 10 MB.", choose: "Choose a file", chooseAgain: "Choose another file",
+    s1Fbx: "02 / CHARACTER FBX", fbxLabel: "Character FBX", dropFbx: "Drop a character FBX you downloaded here, or choose a file. Up to 60 MB.",
+    badFbx: "Please choose an FBX file.", fbxBig: (mb: number) => `The character FBX must be ${mb} MB or less.`, needClip: "Pick or upload at least one clip to add.",
+    s2Anim: "03 / CLIPS TO ADD", sendFbx: "Add the clips", fbxReady: "Ready to send", allNote: "Each clip comes as its own FBX. With two or more, you also get one FBX that holds every clip.",
     s2: "03 / ANIMATION", clips: "Clips to include", yours: "your file", remove: "Remove", addClip: "Add a Mixamo FBX clip",
     mainClip: "Clip to use in the main FBX", clipNote: (n: number) => `Download Mixamo clips as FBX Binary, With Skin, 30 fps. Up to ${n}.`,
     s2opt: "03 / SIZE AND SETTINGS",
     height: "Height (cm)", heightNote: "Total height in the studio. Leave empty for the default.",
+    charHeight: "Character height (cm)", charHeightNote: "Height to the top of the head in the studio. Default 170 cm (human size). Leave empty for the default.",
     mechHeight: "Total height (cm)", split: "Split height", splitNote: "Drag the line on the drawing to the border between base and top. The top turns around this height.",
     splitValue: (p: number) => `${p}% from the top`, front: "Which way the mechanism faces in the drawing", fronts: { viewer: "Toward me (front)", left: "Left", right: "Right" },
     size: "Tile side (cm)", sizeNote: "Up to 2040 cm. Place several tiles for a large floor.", repeat: "Pattern repeats", repeatNote: "4 to 8 for a tiling pattern, 1 for a single picture.",
@@ -88,7 +99,7 @@ const COPY = {
     consent: "I agree that the drawing and the result are published on a page anyone with the link can open.",
     sending: "Sending…", send: "Send the drawing", offline: "The studio PC is offline. Your drawing will be queued and start when it is back.",
     previewAlt: "The drawing you selected", ready: "Ready to send",
-    time: (k: Kind) => (k === "ground" ? "Takes under a minute once it starts." : k === "mech" ? "Builds two parts, about 10 to 15 minutes once it starts." : "Takes about four to ten minutes once it starts."),
+    time: (k: Kind) => (k === "ground" || k === "anim" ? "Takes under a minute once it starts." : k === "mech" ? "Builds two parts, about 10 to 15 minutes once it starts." : "Takes about four to ten minutes once it starts."),
     splitHandle: "Split line (move with the up and down arrow keys)",
     trisTitle: "Mesh density", trisLimit: "Limit the triangle count (recommended)", tris: (k: Kind) => (k === "mech" ? "Triangle limit (both parts together)" : "Triangle limit"),
     trisNote: (v: number) => `Tested value ${n(v)} · OVERDARE recommended limit ${n(OVERDARE_TRIS_LIMIT)} per FBX · steps of ${n(1000)} up to ${n(50000)}. More triangles give smoother shapes but take longer and weigh more.`,
@@ -100,6 +111,7 @@ const COPY = {
       static: (v: number) => `This differs from the tested value (${n(v)}). Static objects were only tested at ${n(v)}. The shape may get smoother, but it takes longer and the file gets bigger.`,
       mech: (v: number) => `This differs from the tested value (${n(v)} in total: top 4,000, base 3,000). Mechanisms were only tested at that value. The seam and pivot stay the same, but it takes longer.`,
       ground: () => "",
+      anim: () => "",
     } as Record<Kind, (v: number) => string>,
     warnLimit: (t: number) => `About ${n(t)} triangles in one FBX, over the OVERDARE recommended limit of ${n(OVERDARE_TRIS_LIMIT)}. The studio may refuse to import it.`,
     warnUnlimited: "No limit: the mesh TRELLIS builds is used as is, usually hundreds of thousands to millions of triangles (3.68 million and a 136 MB FBX for a sandbag test). It cannot go into OVERDARE as is, takes several times longer, and the 3D preview on the result page may not appear (the files can still be downloaded).",
@@ -147,7 +159,10 @@ export function FbxCreateApp() {
     const q = new URLSearchParams(window.location.search);
     setInvite(q.get("invite") || savedInvite());
     const k = q.get("kind");
-    if (k && (KINDS as string[]).includes(k)) setKind(k as Kind);
+    if (k && (KINDS as string[]).includes(k)) {
+      setKind(k as Kind);
+      if (k === "anim") setClips([]);          // 애니 추가제작은 기본 클립을 미리 고르지 않는다
+    }
   }, []);
 
   useEffect(() => {
@@ -170,6 +185,12 @@ export function FbxCreateApp() {
   function pickImage(file: File | undefined) {
     setError(null);
     if (!file) return;
+    if (kind === "anim") {                      // 애니메이션 추가제작: 캐릭터 FBX
+      if (!/\.fbx$/i.test(file.name)) { setError(t.badFbx); return; }
+      if (file.size > MAX_CHAR_FBX_BYTES) { setError(t.fbxBig(MAX_CHAR_FBX_BYTES / 1024 / 1024)); return; }
+      setImage(file);
+      return;
+    }
     if (!IMAGE_TYPES.includes(file.type)) { setError(t.badType); return; }
     if (file.size > MAX_IMAGE_BYTES) { setError(t.tooBig(MAX_IMAGE_BYTES / 1024 / 1024)); return; }
     setImage(file);
@@ -205,7 +226,7 @@ export function FbxCreateApp() {
 
   const split = opts.mech.split ?? 0.5;
   const allClips = [...clips, ...uploads.map(u => u.name)];
-  const ready = Boolean(invite.trim() && image && consent && (kind !== "character" || allClips.length) && !busy);
+  const ready = Boolean(invite.trim() && image && consent && (!hasClips(kind) || allClips.length) && !busy);
 
   function cleanOptions(): KindOptions {
     const o = { ...opts[kind] };
@@ -243,7 +264,7 @@ export function FbxCreateApp() {
     }
   }
 
-  const numberField = (id: string, label: string, note: string, k: Exclude<Kind, "character">, key: "height_cm" | "size_cm" | "uv_repeat", range: readonly [number, number], step = 1) => (
+  const numberField = (id: string, label: string, note: string, k: Kind, key: "height_cm" | "size_cm" | "uv_repeat", range: readonly [number, number], step = 1) => (
     <>
       <label htmlFor={id}>{label}</label>
       <input id={id} className="fbx-input" type="number" inputMode="decimal" min={range[0]} max={range[1]} step={step}
@@ -315,34 +336,40 @@ export function FbxCreateApp() {
           <legend>{t.kindLegend}</legend>
           {KINDS.map(k => (
             <label key={k} className={kind === k ? "fbx-kind active" : "fbx-kind"}>
-              <input type="radio" name="fbx-kind" value={k} checked={kind === k} onChange={() => { setKind(k); setError(null); }} />
+              <input type="radio" name="fbx-kind" value={k} checked={kind === k} onChange={() => {
+                if ((k === "anim") !== (kind === "anim")) {
+                  setImage(null);
+                  setClips(k === "anim" ? [] : [DEFAULT_CLIP]);
+                }
+                setKind(k); setError(null);
+              }} />
               <span><strong>{t.kinds[k].name}</strong><small>{t.kinds[k].desc}</small></span>
             </label>
           ))}
         </fieldset>
 
-        <span className="eyebrow">{t.s1}</span>
+        <span className="eyebrow">{kind === "anim" ? t.s1Fbx : t.s1}</span>
         <label htmlFor="invite-code">{t.invite}</label>
         <input id="invite-code" className="fbx-input" value={invite} autoComplete="off" spellCheck={false}
           placeholder={t.invitePh} onChange={e => setInvite(e.target.value)} />
 
-        <label htmlFor="drawing-file">{t.drawing}</label>
+        <label htmlFor="drawing-file">{kind === "anim" ? t.fbxLabel : t.drawing}</label>
         <div className={dragging ? "fbx-dropzone dragging" : "fbx-dropzone"}
           onDragOver={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={e => { e.preventDefault(); setDragging(false); pickImage(e.dataTransfer.files[0]); }}>
-          <input id="drawing-file" ref={imageInput} type="file" accept="image/png,image/jpeg,image/webp"
-            onChange={e => pickImage(e.target.files?.[0])} />
-          {image ? <p>{image.name} / {sizeText(image.size)}</p> : <p>{t.drop}</p>}
+          <input id="drawing-file" ref={imageInput} type="file" accept={kind === "anim" ? ".fbx" : "image/png,image/jpeg,image/webp"}
+            onChange={e => { pickImage(e.target.files?.[0]); e.target.value = ""; }} />
+          {image ? <p>{image.name} / {sizeText(image.size)}</p> : <p>{kind === "anim" ? t.dropFbx : t.drop}</p>}
           <button type="button" className="button outline" onClick={() => imageInput.current?.click()}>
             {image ? t.chooseAgain : t.choose}
           </button>
         </div>
         <p className="small-note">{t.kinds[kind].tip}</p>
 
-        {kind === "character" ? (
+        {hasClips(kind) ? (
           <>
-            <span className="eyebrow">{t.s2}</span>
+            <span className="eyebrow">{kind === "anim" ? t.s2Anim : t.s2}</span>
             <fieldset className="fbx-fieldset">
               <legend>{t.clips}</legend>
               {LIBRARY_CLIPS.map(name => (
@@ -370,6 +397,8 @@ export function FbxCreateApp() {
               </>
             )}
             <p className="small-note">{t.clipNote(MAX_CLIPS)}</p>
+            {kind === "anim" && <p className="small-note">{allClips.length ? t.allNote : t.needClip}</p>}
+            {kind === "character" && numberField("opt-char-height", t.charHeight, t.charHeightNote, "character", "height_cm", OPTION_RANGES.height_cm)}
             {trisBlock}
           </>
         ) : (
@@ -407,14 +436,16 @@ export function FbxCreateApp() {
 
         {error && <p className="fbx-error" role="alert">{error}</p>}
         <button className="button primary wide" disabled={!ready} onClick={submit}>
-          {busy ? t.sending : t.send}
+          {busy ? t.sending : kind === "anim" ? t.sendFbx : t.send}
         </button>
         {online === false && <p className="small-note">{t.offline}</p>}
       </div>
 
       <div className="creation-preview">
         <p className="small-note">{t.time(kind)}</p>
-        {imageUrl ? (
+        {kind === "anim" ? (
+          <div className="fbx-placeholder" aria-hidden="true" />
+        ) : imageUrl ? (
           kind === "mech" ? (
             <div className="fbx-split-wrap" ref={splitBox}
               onPointerDown={e => { splitDrag.current = true; (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); splitFromPointer(e.clientY); }}

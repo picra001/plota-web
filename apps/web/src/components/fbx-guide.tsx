@@ -60,6 +60,7 @@ const KO: Guide = {
         [<b key="s">정적 물체</b>, "나무, 테이블, 상자, 바리케이드", "물체 하나, 형태가 잘 보이는 각도, 단색 배경", "FBX 1개 (뼈대 없음, 원점 = 바닥 가운데)", "가져와서 Anchored 로 고정"],
         [<b key="m">움직이는 장치</b>, "포탑, 회전하는 받침, 크레인", "받침과 윗부분의 경계가 수평으로 보이는 측면·정면 그림", "받침 FBX + 윗부분 FBX (윗부분 원점 = 회전축)", "두 파트를 한 모델로 묶고 스크립트로 윗부분을 돌림"],
         [<b key="g">바닥</b>, "타일, 흙, 돌바닥 무늬", "위에서 내려다본 무늬. 가운데 정사각형을 씀", "평평한 바닥 FBX 1개 (한 변 최대 2040cm)", "여러 장을 이어 붙여 넓은 바닥"],
+        [<b key="n">애니메이션 추가제작</b>, "이미 받은 캐릭터에 동작 더하기", "그림 대신 여기서 받은 캐릭터 FBX + 더 붙일 Mixamo 동작", "동작별 FBX + 모든 동작을 묶은 FBX 1개 (리깅은 그대로, 1분 안쪽)", "동작별 FBX를 가져와 재생"],
       ]} />
       <h3>캐릭터 외 종류의 설정</h3>
       <ul>
@@ -116,6 +117,7 @@ const KO: Guide = {
           <li>직접 받은 Mixamo 동작을 쓰려면 <Ui>Mixamo FBX 클립 추가</Ui>. Mixamo에서 <b>FBX Binary · With Skin · 30 fps</b>로 받은 파일을 올립니다.</li>
           <li>클립은 그림 하나당 <b>최대 4개</b>, 파일당 <b>10MB 이하</b>입니다.</li>
           <li>클립을 두 개 이상 고르면 <Ui>메인 FBX에 넣을 동작</Ui>에서 메인 FBX에 넣을 동작을 정합니다. 나머지는 클립별 FBX로 따로 받습니다.</li>
+          <li><Ui>키 (cm)</Ui>는 스튜디오에 들어갔을 때 머리 꼭대기까지의 키입니다. 기본 170cm, 10~2000cm. 동작은 이 키에 맞춰 다시 계산합니다.</li>
         </ul></>,
         <p key="4">동의 체크박스를 읽고 체크합니다. 그림과 결과가 <b>링크를 아는 사람 누구나 볼 수 있는 페이지</b>에 올라간다는 내용입니다(<a href="#privacy">공개와 삭제</a>).</p>,
         <p key="5"><Ui>그림 보내기</Ui>를 누르면 결과 페이지로 넘어갑니다.</p>,
@@ -190,7 +192,7 @@ const KO: Guide = {
     { id: "limits", title: "제한 한눈에", body: <Table head={["항목", "값"]} rows={[
       ["그림 형식 / 크기", "PNG · JPG · WEBP / 10MB 이하"], ["그림당 대상", "1개 (캐릭터 1명, 물체 1개, 장치 1대)"], ["애니메이션 클립 (캐릭터)", "그림당 최대 4개 · 파일당 10MB 이하"],
       ["기본 제공 클립", "Walking · Salute"], ["처리 시간 (시작 후)", "바닥 1분 · 캐릭터·물체 4~10분 · 장치 10~15분"], ["동시 처리", "한 번에 1개 (차례대로)"],
-      ["물체·장치 높이", "10~2000cm (기본 120 / 200)"], ["바닥 한 변 · 무늬 반복", "100~2040cm · 1~16회"],
+      ["캐릭터 키 · 물체·장치 높이", "10~2000cm (기본 170 / 120 / 200)"], ["바닥 한 변 · 무늬 반복", "100~2040cm · 1~16회"],
       ["제한 삼각형 수 (기본 = 검증값)", "캐릭터 8,000 · 물체 2,000 · 장치 합계 7,000 / 1,000~50,000 (1,000 단위) 또는 제한 없음"], ["OVERDARE 권장 상한", "FBX 1개당 삼각형 30,000"],
       ["결과 모델", "FBX 1개당 메시 1개 · 텍스처 512px"], ["손가락 본", "자동 (가능할 때 한 손 15개)"],
     ]} /> },
@@ -221,6 +223,7 @@ const EN: Guide = {
         [<b key="s">Static object</b>, "Trees, tables, crates, barricades", "One object, an angle that shows its shape, plain background", "1 FBX (no skeleton, origin at floor center)", "Import and set Anchored"],
         [<b key="m">Mechanism</b>, "Turrets, turntables, cranes", "A side or front view where the line between base and top is level", "Base FBX + top FBX (top origin = pivot)", "Group the two parts and turn the top with a script"],
         [<b key="g">Ground</b>, "Tile, dirt, or stone patterns", "A top-down pattern. The center square is used", "1 flat ground FBX (up to 2040 cm per side)", "Place several tiles for a large floor"],
+        [<b key="n">Add animations</b>, "More clips for a character you already have", "Instead of a drawing: a character FBX from this site + the Mixamo clips to add", "One FBX per clip + one FBX with every clip (same rig, under a minute)", "Import the clip FBXs and play them"],
       ]} />
       <h3>Settings for the other types</h3>
       <ul>
@@ -277,6 +280,7 @@ const EN: Guide = {
           <li>To use your own Mixamo motion, use <Ui>Add a Mixamo FBX clip</Ui> and upload a file downloaded from Mixamo as <b>FBX Binary · With Skin · 30 fps</b>.</li>
           <li>Up to <b>4 clips</b> per drawing, <b>10 MB or less</b> each.</li>
           <li>With two or more clips, choose which goes into the main FBX in <Ui>Clip to use in the main FBX</Ui>. The others come as separate clip FBXs.</li>
+          <li><Ui>Character height (cm)</Ui> is the height to the top of the head in the studio. Default 170 cm, 10 to 2000 cm. Motion is recalculated for this height.</li>
         </ul></>,
         <p key="4">Read and tick the consent box. It says the drawing and result go on <b>a page anyone with the link can open</b> (<a href="#privacy">Sharing and removal</a>).</p>,
         <p key="5">Press <Ui>Send the drawing</Ui> to go to the result page.</p>,
@@ -351,7 +355,7 @@ const EN: Guide = {
     { id: "limits", title: "Limits at a glance", body: <Table head={["Item", "Value"]} rows={[
       ["Drawing format / size", "PNG · JPG · WEBP / 10 MB or less"], ["Subjects per drawing", "1 (one character, object, or mechanism)"], ["Animation clips (characters)", "Up to 4 per drawing · 10 MB each"],
       ["Built-in clips", "Walking · Salute"], ["Time (once started)", "Ground 1 min · character/object 4–10 min · mechanism 10–15 min"], ["Concurrency", "One at a time (in order)"],
-      ["Object / mechanism height", "10–2000 cm (default 120 / 200)"], ["Ground side · pattern repeats", "100–2040 cm · 1–16"],
+      ["Character / object / mechanism height", "10–2000 cm (default 170 / 120 / 200)"], ["Ground side · pattern repeats", "100–2040 cm · 1–16"],
       ["Triangle limit (default = tested value)", "Character 8,000 · object 2,000 · mechanism 7,000 total / 1,000–50,000 in steps of 1,000, or no limit"], ["OVERDARE recommended limit", "30,000 triangles per FBX"],
       ["Result model", "1 mesh per FBX · 512 px texture"], ["Finger bones", "Automatic (15 per hand when possible)"],
     ]} /> },
