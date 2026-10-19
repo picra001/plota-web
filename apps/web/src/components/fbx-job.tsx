@@ -7,6 +7,7 @@ import {
   clipFiles, elapsed, fileLabel, getJob, inputImageUrl, jobToken, kindLabel, patchJob, stepLabel, KIND_DEFAULTS,
   FbxApiError, type Job,
 } from "@/lib/fbx-api";
+import { glbStats, type GlbStats } from "@/lib/glb-stats";
 
 const FAST_POLL_MS = 3000;
 const SLOW_POLL_MS = 8000;
@@ -27,7 +28,8 @@ const COPY = {
     failed: "이 그림은 변환하지 못했습니다.", another: "다른 그림 보내기",
     facts: { kind: "종류", anim: "애니메이션", body: "체형", big: "큰 머리", standard: "보통", skeleton: "뼈대", template: "템플릿", auto: "자동", time: "처리 시간",
       height: "높이", size: "바닥 한 변", repeat: "무늬 반복", split: "자르는 높이", splitV: (p: number) => `위에서 ${p}%`,
-      tris: "제한 삼각형 수", trisUnlimited: "제한 없음", trisTested: "검증값" },
+      tris: "제한 삼각형 수", trisUnlimited: "제한 없음", trisTested: "검증값",
+      asked: "요청", made: "만들어진 결과", realTris: "삼각형 수", realTrisMech: "삼각형 수 (두 파트 합)", realSize: "크기 (가로×깊이×높이)", realGround: "크기 (가로×세로)" },
     yoursKind: { character: "내 캐릭터", static: "내 물체", mech: "내 장치", ground: "내 바닥" } as Record<string, string>,
     mechNote: "받침(고정)과 윗부분(움직임) FBX를 둘 다 받아 스튜디오에서 한 모델로 묶으세요. 윗부분의 원점이 회전축입니다.",
     footer: "링크를 아는 사람은 누구나 이 페이지를 열고 파일을 받을 수 있습니다.",
@@ -46,7 +48,8 @@ const COPY = {
     failed: "This drawing could not be converted.", another: "Try another drawing",
     facts: { kind: "Type", anim: "Animation", body: "Body type", big: "Big head", standard: "Standard", skeleton: "Skeleton", template: "Template", auto: "Auto", time: "Processing time",
       height: "Height", size: "Tile side", repeat: "Pattern repeats", split: "Split height", splitV: (p: number) => `${p}% from the top`,
-      tris: "Triangle limit", trisUnlimited: "No limit", trisTested: "tested value" },
+      tris: "Triangle limit", trisUnlimited: "No limit", trisTested: "tested value",
+      asked: "Requested", made: "What was made", realTris: "Triangles", realTrisMech: "Triangles (both parts)", realSize: "Size (W×D×H)", realGround: "Size (W×L)" },
     yoursKind: { character: "Your character", static: "Your object", mech: "Your mechanism", ground: "Your ground" } as Record<string, string>,
     mechNote: "Download both the base (fixed) and the top (moving) FBX and group them as one model in the studio. The top's origin is its pivot.",
     footer: "Anyone with this link can open this page and download the files.",
@@ -181,6 +184,7 @@ export function FbxJobView() {
   const [loaded, setLoaded] = useState(false);
   const [copied, setCopied] = useState(false);
   const jobRef = useRef<Job | null>(null);
+  const [stats, setStats] = useState<GlbStats | null>(null);
 
   // 주소의 id 와 이 브라우저의 편집 키는 렌더가 아니라 마운트 후에 읽는다(정적 생성 호환)
   useEffect(() => {
@@ -230,6 +234,15 @@ export function FbxJobView() {
     };
   }, [id, load]);
 
+  // 실제로 만들어진 값은 preview.glb 머리에서 잰다. 못 읽으면(50MB 넘어 안 올린 경우 등) 그 줄만 뺀다.
+  const glbUrl = job?.status === "done" ? job.files["preview.glb"] : undefined;
+  useEffect(() => {
+    if (!glbUrl) return;
+    let alive = true;
+    glbStats(glbUrl).then(s => { if (alive) setStats(s); }).catch(() => undefined);
+    return () => { alive = false; };
+  }, [glbUrl]);
+
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -257,9 +270,9 @@ export function FbxJobView() {
   if (job.kind && job.kind !== "character") {
     facts.push([t.facts.kind, kindLabel(job.kind, lang)]);
     const o = job.options || {};
-    if (o.height_cm) facts.push([t.facts.height, `${o.height_cm} cm`]);
+    if (o.height_cm) facts.push([t.facts.height, `${Number(o.height_cm).toLocaleString("en-US")} cm`]);
     if (o.split) facts.push([t.facts.split, t.facts.splitV(Math.round(o.split * 100))]);
-    if (o.size_cm) facts.push([t.facts.size, `${o.size_cm} cm`]);
+    if (o.size_cm) facts.push([t.facts.size, `${Number(o.size_cm).toLocaleString("en-US")} cm`]);
     if (o.uv_repeat && o.uv_repeat > 1) facts.push([t.facts.repeat, `${o.uv_repeat}×${o.uv_repeat}`]);
   }
   {
@@ -270,9 +283,19 @@ export function FbxJobView() {
     if (tr !== undefined) facts.push([t.facts.tris, tr === "unlimited" ? t.facts.trisUnlimited : `${Number(tr).toLocaleString("en-US")}${tr === def ? ` (${t.facts.trisTested})` : ""}`]);
   }
   if (job.anim_default) facts.push([t.facts.anim, job.anim_default]);
-  if (job.body_type) facts.push([t.facts.body, job.body_type === "bighead" ? t.facts.big : t.facts.standard]);
-  if (job.skeleton_src) facts.push([t.facts.skeleton, job.skeleton_src === "template" ? t.facts.template : t.facts.auto]);
-  if (job.started_at && job.finished_at) facts.push([t.facts.time, elapsed(job.started_at, job.finished_at)]);
+
+  const made: [string, string][] = [];
+  if (stats) {
+    const kind = job.kind ?? "character";
+    const cm = (m: number) => Math.round(m * 100).toLocaleString("en-US");
+    made.push([kind === "mech" ? t.facts.realTrisMech : t.facts.realTris, stats.tris.toLocaleString("en-US")]);
+    const [w, h, d] = stats.size;                                // 캐릭터는 정규화된 메시라 크기를 쓰지 않는다
+    if (kind === "ground") made.push([t.facts.realGround, `${cm(w)} × ${cm(d)} cm`]);
+    else if (kind !== "character") made.push([t.facts.realSize, `${cm(w)} × ${cm(d)} × ${cm(h)} cm`]);
+  }
+  if (job.body_type) made.push([t.facts.body, job.body_type === "bighead" ? t.facts.big : t.facts.standard]);
+  if (job.skeleton_src) made.push([t.facts.skeleton, job.skeleton_src === "template" ? t.facts.template : t.facts.auto]);
+  if (job.started_at && job.finished_at) made.push([t.facts.time, elapsed(job.started_at, job.finished_at)]);
 
   return (
     <div className="fbx-job">
@@ -316,11 +339,12 @@ export function FbxJobView() {
             </div>
           )}
 
-          {facts.length > 0 && (
-            <div className="asset-specs">
-              {facts.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
+          {([[t.facts.asked, facts], [t.facts.made, made]] as const).map(([title, rows]) => rows.length > 0 && (
+            <div key={title} className="asset-specs">
+              <p className="asset-specs-title">{title}</p>
+              {rows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
             </div>
-          )}
+          ))}
         </div>
       </div>
 

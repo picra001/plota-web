@@ -46,6 +46,7 @@
 .fbx-job-stage{background:#e5eadd;border:1px solid var(--line);border-radius:5px;padding:18px;display:flex;align-items:center;justify-content:center;min-height:260px}
 .fbx-job-side>p{font-size:13px;line-height:1.8}
 .fbx-job-side .asset-specs{margin-top:26px}
+.asset-specs>p.asset-specs-title{margin:0;padding:14px 0 6px;font-size:11px;letter-spacing:.06em;color:var(--muted)}
 .fbx-failed p{font-size:13px;line-height:1.8}
 .fbx-failed .button{margin-top:14px}
 .fbx-job-empty{padding:70px 0;text-align:center}

@@ -60,7 +60,7 @@ pnpm exec wrangler secret put INVITE_CODES
   WAF 규칙 `URI Path starts with "/priv/"` → Block 을 하나 추가한다(권장).
 - **CORS (필수, 2026-10-19 적용)**: 결과 페이지의 3D 미리보기(model-viewer)는 `preview.glb` 를 `fetch` 로 읽는다.
   CORS 규칙이 없으면 브라우저가 막아 원본 그림(poster)만 보인다(다운로드 링크는 CORS 와 무관해서 된다).
-  규칙 파일 `r2-cors.json`(plota.ai · www.plota.ai · localhost:3000, GET/HEAD):
+  규칙 파일 `r2-cors.json`(plota.ai · www.plota.ai · localhost:3000·3011, GET/HEAD):
   `npx wrangler r2 bucket cors set plota-assets --file r2-cors.json -y` → 확인 `npx wrangler r2 bucket cors list plota-assets`.
   사이트 주소를 새로 쓰면 `origins` 에 추가하고 다시 set.
 
