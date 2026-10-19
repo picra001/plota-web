@@ -1,0 +1,12 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": ["https://plota.ai", "https://www.plota.ai", "http://localhost:3000"],
+        "methods": ["GET", "HEAD"]
+      },
+      "exposeHeaders": ["Content-Length", "Content-Type", "ETag"],
+      "maxAgeSeconds": 86400
+    }
+  ]
+}

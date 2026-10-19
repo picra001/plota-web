@@ -58,6 +58,11 @@ pnpm exec wrangler secret put INVITE_CODES
   이 Worker 가 중계한다(숨긴 작업은 404). 다만 **R2 공개 도메인은 키를 아는 사람에게는 `priv/` 도 내준다** —
   작업 id 가 UUID 라서 추측은 사실상 불가능하지만, 더 막으려면 `assets.plota.ai` 에
   WAF 규칙 `URI Path starts with "/priv/"` → Block 을 하나 추가한다(권장).
+- **CORS (필수, 2026-10-19 적용)**: 결과 페이지의 3D 미리보기(model-viewer)는 `preview.glb` 를 `fetch` 로 읽는다.
+  CORS 규칙이 없으면 브라우저가 막아 원본 그림(poster)만 보인다(다운로드 링크는 CORS 와 무관해서 된다).
+  규칙 파일 `r2-cors.json`(plota.ai · www.plota.ai · localhost:3000, GET/HEAD):
+  `npx wrangler r2 bucket cors set plota-assets --file r2-cors.json -y` → 확인 `npx wrangler r2 bucket cors list plota-assets`.
+  사이트 주소를 새로 쓰면 `origins` 에 추가하고 다시 set.
 
 ### 4. 커스텀 도메인 · 배포
 
