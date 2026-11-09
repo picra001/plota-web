@@ -3,6 +3,7 @@
 이 저장소를 수정하기 전에 `docs/PROJECT_CONTEXT.md`를 읽는다. 프로젝트 구조, 수정 지점, 콘텐츠 규칙과 배포 관련 확인 사항을 정리한 문서다.
 
 - 사용자 확인 운영 방식: Git 연동 Cloudflare 배포, 정적 생성 콘텐츠 사이트.
+- `/` 는 메인 웹게임(현재 Habitats), `/home` 은 앱 아이콘 홈 화면이다. 웹게임은 `games/<게임>/` 에서 빌드해 `apps/web/public/games/<게임>/` 결과물까지 커밋한다(`games/README.md`).
 - 예외는 FBX 제작 하나다. `apps/fbx-api`(Cloudflare Worker + D1 + R2)가 별도 서비스로 있고, `/en/fbx/create` 와 `/en/fbx/job` 이 브라우저에서 그 API 를 호출한다. 페이지 자체는 그대로 정적 생성이다.
 - 기존 README 및 과거 문서의 Vercel 운영·Cloudflare 미사용 설명은 현재 운영 기준으로 사용하지 않는다.
 - FBX 제작 외에는 백엔드·DB·인증 서버가 있다고 가정하지 않는다. 새 기능은 정적 생성·브라우저 실행 구조에 맞춰 설계한다.

@@ -1,0 +1,18 @@
+/* plota.ai/home — 휴대폰 홈 화면처럼 앱 아이콘을 늘어놓는 화면 */
+.home-screen{display:flex;justify-content:center;padding:48px var(--frame-gutter,22px) 72px;font-family:var(--font-sans)}
+.home-device{width:100%;max-width:420px;background:#ebe7dc;border:1px solid #dcd7c9;border-radius:36px;padding:28px 22px 34px}
+.home-widget{display:flex;flex-direction:column;gap:4px;background:#34533d;color:#f6f3ed!important;border-radius:22px;padding:20px 22px;text-decoration:none;transition:transform .15s}
+.home-widget:hover{transform:translateY(-2px)}
+.home-widget-label{font-size:11px;letter-spacing:.08em;opacity:.75}
+.home-widget strong{font-size:30px;font-weight:600;letter-spacing:-.03em;line-height:1.15}
+.home-widget-note{font-size:13px;opacity:.85}
+.home-widget-play{align-self:flex-start;margin-top:14px;background:#f6f3ed;color:#34533d;font-size:13px;font-weight:600;border-radius:999px;padding:7px 16px}
+.home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px 8px;margin-top:28px}
+.home-app{display:flex;flex-direction:column;align-items:center;gap:7px;text-decoration:none;color:#323a33!important;min-width:0}
+.home-icon{width:62px;height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 1px 0 rgba(0,0,0,.08);transition:transform .15s}
+.home-icon svg{width:34px;height:34px}
+.home-app:hover .home-icon{transform:scale(1.06)}
+.home-app:focus-visible{outline:3px solid #b88136;outline-offset:4px;border-radius:12px}
+.home-app-name{font-size:12px;line-height:1.3;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:420px){.home-screen{padding:20px 12px 40px}.home-device{border-radius:28px;padding:20px 14px 26px}.home-icon{width:56px;height:56px;border-radius:14px}.home-icon svg{width:30px;height:30px}.home-app-name{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.home-widget,.home-icon{transition:none}}

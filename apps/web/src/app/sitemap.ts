@@ -22,9 +22,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
   });
   // 허브·FBX·웹툰은 한국어(기본)·영어 두 벌, 중국어 학습·실험실은 한국어 전용
   const bilingual = (path: string) => ({ ko: absoluteUrl(`/ko${path}`), en: absoluteUrl(`/en${path}`), "x-default": absoluteUrl(`/ko${path}`) });
-  const pages = ["", ...productPaths.filter(p => p !== "fbx/job" && !p.startsWith("chinese")).map(p => `/${p}`)].flatMap(path => (["ko", "en"] as const).map(l => ({
-    url: absoluteUrl(`/${l}${path}`), changeFrequency: "weekly" as const, priority: path === "" && l === "ko" ? 1 : 0.7, alternates: { languages: bilingual(path) },
+  const pages = [...productPaths.filter(p => p !== "fbx/job" && !p.startsWith("chinese")).map(p => `/${p}`)].flatMap(path => (["ko", "en"] as const).map(l => ({
+    url: absoluteUrl(`/${l}${path}`), changeFrequency: "weekly" as const, priority: 0.7, alternates: { languages: bilingual(path) },
   })));
   const koOnly = ["/ko/lab", ...productPaths.filter(p => p.startsWith("chinese")).map(p => `/ko/${p}`)].map(url => ({ url: absoluteUrl(url), changeFrequency: "weekly" as const, priority: 0.7 }));
-  return [...pages, ...koOnly, ...journal];
+  const root = [
+    { url: absoluteUrl("/"), changeFrequency: "weekly" as const, priority: 1 },
+    { url: absoluteUrl("/home"), changeFrequency: "weekly" as const, priority: 0.9, alternates: { languages: { ko: absoluteUrl("/home"), en: absoluteUrl("/en/home"), "x-default": absoluteUrl("/home") } } },
+    { url: absoluteUrl("/en/home"), changeFrequency: "weekly" as const, priority: 0.7, alternates: { languages: { ko: absoluteUrl("/home"), en: absoluteUrl("/en/home"), "x-default": absoluteUrl("/home") } } },
+    { url: absoluteUrl("/games/habitats"), changeFrequency: "weekly" as const, priority: 0.8 },
+  ];
+  return [...root, ...pages, ...koOnly, ...journal];
 }

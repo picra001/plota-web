@@ -9,7 +9,10 @@ const nextConfig = {
   // 루트(/) 접속은 기본 언어로 보낸다. (필요 시 추후 Accept-Language 기반 미들웨어로 교체)
   async redirects() {
     return [
-      { source: "/", destination: "/ko", permanent: false },
+      // 예전 허브(첫 페이지)는 없앴다. 언어 루트는 홈 화면으로 보낸다.
+      { source: "/ko", destination: "/home", permanent: false },
+      { source: "/:lang(en|ja|zh|es)", destination: "/:lang/home", permanent: false },
+      { source: "/games", destination: "/home", permanent: false },
       { source: "/fbx/:path*", destination: "/ko/fbx/:path*", permanent: false },
       { source: "/webtoon/:path*", destination: "/ko/webtoon/:path*", permanent: false },
       // 컨셉 에셋 상세 페이지는 없앴다
@@ -24,13 +27,17 @@ const nextConfig = {
   },
   async rewrites() {
     const apiUrl = process.env.API_URL;
-    if (!apiUrl) return [];
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${apiUrl.replace(/\/$/, "")}/:path*`,
-      },
+    // 루트(/)는 메인 게임이다. public/index.html(= games/set-main.mjs 로 복사한 게임 화면)을
+    // Cloudflare 에셋이 Worker 보다 먼저 내준다. 아래 rewrite 는 next dev/start 에서도 같게 보이도록 둔 것.
+    const beforeFiles = [
+      { source: "/", destination: "/index.html" },
+      { source: "/games/:game", destination: "/games/:game/index.html" },
+      { source: "/home", destination: "/ko/home" },
     ];
+    const afterFiles = apiUrl
+      ? [{ source: "/api/:path*", destination: `${apiUrl.replace(/\/$/, "")}/:path*` }]
+      : [];
+    return { beforeFiles, afterFiles, fallback: [] };
   },
 };
 

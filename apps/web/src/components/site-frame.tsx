@@ -12,19 +12,28 @@ const labels = {
   es: { home: "Inicio", journal: "Diario", lab: "Laboratorio", create: "Crear", assets: "Recursos", guides: "Guías", series: "Todas las series", latest: "Últimos episodios", learn: "Aprender", review: "Repasar", conversation: "Conversación", settings: "Ajustes", language: "Idioma", skip: "Ir al contenido" },
 };
 
+/** 같은 페이지의 다른 언어 주소. 접두사 없는 /home 은 /{lang}/home 으로 보낸다. */
+function langPath(pathname: string, l: string) {
+  if (pathname === "/home") return l === "ko" ? "/home" : `/${l}/home`;
+  if (/^\/(ko|en|ja|zh|es)\/home$/.test(pathname)) return l === "ko" ? "/home" : `/${l}/home`;
+  return pathname.replace(/^\/(ko|en|ja|zh|es)(?=\/|$)/, `/${l}`);
+}
+
 export function SiteFrame({ kind = "hub", children }: { kind?: "hub" | "fbx" | "webtoon" | "chinese"; children: React.ReactNode }) {
   const pathname = usePathname() || "/ko";
   const segment = pathname.split("/")[1];
   const locale = isLocale(segment) ? segment : "ko";
   const t = labels[locale];
-  const root = kind === "hub" ? `/${locale}` : `/${locale}/${kind}`;
-  const links = kind === "hub" ? [[t.home, root], [t.journal, `${root}/devlog`], [t.lab, `${root}/lab`]] : kind === "fbx" ? [[t.home, root], [t.create, `${root}/create`], [t.assets, `${root}/assets`], [t.guides, `${root}/guide`]] : kind === "webtoon" ? [[t.series, root], [t.latest, `${root}#latest`]] : [[t.home, root], [t.learn, `${root}/learn`], [({ko:"단어 사전",en:"Dictionary",ja:"単語辞典",zh:"词典",es:"Diccionario"})[locale], `${root}/vocabulary`], [t.conversation, `${root}/conversation`], [t.settings, `${root}/settings`]];
+  // 허브의 홈은 휴대폰 홈 화면(/home). 한국어는 /home, 그 밖의 언어는 /{lang}/home.
+  const homeHref = locale === "ko" ? "/home" : `/${locale}/home`;
+  const root = kind === "hub" ? homeHref : `/${locale}/${kind}`;
+  const links = kind === "hub" ? [[t.home, homeHref], [t.journal, `/${locale}/devlog`], [t.lab, `/${locale}/lab`]] : kind === "fbx" ? [[t.home, root], [t.create, `${root}/create`], [t.assets, `${root}/assets`], [t.guides, `${root}/guide`]] : kind === "webtoon" ? [[t.series, root], [t.latest, `${root}#latest`]] : [[t.home, root], [t.learn, `${root}/learn`], [({ko:"단어 사전",en:"Dictionary",ja:"単語辞典",zh:"词典",es:"Diccionario"})[locale], `${root}/vocabulary`], [t.conversation, `${root}/conversation`], [t.settings, `${root}/settings`]];
   const title = kind === "hub" ? "STUDIO" : kind === "fbx" ? "FBX STUDIO" : kind === "webtoon" ? "STORIES" : "CHINESE";
   const active = (href: string) => href === root ? pathname === root : !href.includes("#") && pathname.startsWith(href);
   return <div className={kind === "hub" ? "hub-site site-frame" : `product-site ${kind}-site site-frame`}>
     <a href="#main-content" className="skip-link">{t.skip}</a>
     <header className="site-masthead"><div className="site-frame-inner site-header-row"><Link className="site-wordmark" href={root}>PLOTA<span>{title}</span></Link><nav className="site-navigation" aria-label={t.home}>{links.map(([label, href]) => <Link key={href} href={href} aria-current={active(href) ? "page" : undefined}>{label}</Link>)}</nav></div></header>
     <main id="main-content" className={kind === "hub" ? "legacy-content" : undefined}>{children}</main>
-    <footer className="site-footer"><div className="site-frame-inner"><div className="site-footer-top"><div><Link href={root} className="site-wordmark">PLOTA<span>{title}</span></Link></div></div><div className="site-footer-bottom"><span>PLOTA 2026</span><nav className="footer-languages" aria-label={t.language}><span>{t.language}</span>{locales.map(l => <Link key={l} href={pathname.replace(/^\/(ko|en|ja|zh|es)(?=\/|$)/, `/${l}`)} hrefLang={l} lang={l} aria-current={l === locale ? "page" : undefined} onClick={e => { e.preventDefault(); window.location.assign(pathname.replace(/^\/(ko|en|ja|zh|es)(?=\/|$)/, `/${l}`) + window.location.search + window.location.hash); }}>{localeName[l]}</Link>)}</nav></div></div></footer>
+    <footer className="site-footer"><div className="site-frame-inner"><div className="site-footer-top"><div><Link href={root} className="site-wordmark">PLOTA<span>{title}</span></Link></div></div><div className="site-footer-bottom"><span>PLOTA 2026</span><nav className="footer-languages" aria-label={t.language}><span>{t.language}</span>{locales.map(l => <Link key={l} href={langPath(pathname, l)} hrefLang={l} lang={l} aria-current={l === locale ? "page" : undefined} onClick={e => { e.preventDefault(); window.location.assign(langPath(pathname, l) + window.location.search + window.location.hash); }}>{localeName[l]}</Link>)}</nav></div></div></footer>
   </div>;
 }

@@ -30,9 +30,11 @@ export function GET() {
 
 > ${siteMeta[lang].description}
 
-PLOTA is an independent studio. The hub, FBX Studio, and webtoons are in Korean (default, /ko) and English (/en). Lab and the Mandarin learning app use Korean. FBX Studio turns one drawing into a rigged, animated FBX (invite only). Chinese quiz scores are session-only; no learning history is persisted.
+PLOTA is an independent studio. The root URL (/) opens the main web game, Habitats, directly; /home lists every game and service like a phone home screen. FBX Studio and webtoons are in Korean (default, /ko) and English (/en). Lab and the Mandarin learning app use Korean. FBX Studio turns one drawing into a rigged, animated FBX (invite only). Chinese quiz scores are session-only; no learning history is persisted.
 
 ## Products
+- [Habitats](${absoluteUrl("/games/habitats")}): Main web game (Korean). A life simulation told through the homes you live in. Also opens at the root URL. Saves stay in the browser.
+- [Home](${absoluteUrl("/home")}): App-style launcher for all pages.
 - [FBX Studio](${absoluteUrl("/ko/fbx")}): One drawing to a rigged, animated 3D character FBX.
 - [Assets](${absoluteUrl("/ko/fbx/assets")}): Shared results and a small concept collection.
 - [Guide](${absoluteUrl("/ko/fbx/guide")}): How to pick a drawing, send it, and use the result.

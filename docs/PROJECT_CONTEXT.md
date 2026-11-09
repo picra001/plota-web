@@ -235,3 +235,31 @@ node node_modules/next/dist/bin/next start -p 3000
   제목 편집(보낸 브라우저만) → 남의 브라우저에서는 편집 숨김 → 없는 id·id 없음 안내 → 같은 그림 재접수 안내 →
   실패 화면 → GLB 손상 시 그림으로 내려감 → 모바일 375px 가로 넘침 없음.
 - 아직 안 한 것: Cloudflare 배포본에서의 확인, 실제 GPU 변환 1건 관통(= P2 완료 기준), 다른 브라우저·실기기 확인.
+
+
+## 14. 메인 웹게임·홈 화면 개편 (2026-11-09)
+
+- **`/` 는 메인 웹게임 Habitats** 를 주소 그대로 띄운다. 예전 허브(`[lang]/(site)/page.tsx`)는 삭제했다.
+  - 방식: `apps/web/public/index.html`(= 게임의 index.html 복사본)을 `next.config.mjs` 의 beforeFiles rewrite `/ → /index.html` 로 내준다.
+  - 복사는 `node games/set-main.mjs <게임>`. 게임을 다시 빌드하면(해시 파일명 변경) 이 명령도 다시 실행한다.
+- **`/home`** 은 휴대폰 홈 화면처럼 앱 아이콘을 늘어놓은 화면이다(메인 게임 위젯 + 아이콘 7개).
+  - 파일: `src/app/[lang]/(site)/home/page.tsx`, `src/components/home-screen.tsx`, `src/app/home.css`.
+  - 아이콘 목록은 `src/lib/home-apps.ts` 한 곳에서 관리한다. 새 페이지·게임은 여기에 한 줄 추가.
+  - 한국어는 `/home`(rewrite → `/ko/home`), 다른 언어는 `/{lang}/home`. `/ko` → `/home`, `/{en|ja|zh|es}` → `/{lang}/home`, `/games` → `/home` 리다이렉트.
+  - 허브 헤더의 "홈"·로고는 `/home` 으로 간다. 푸터 언어 전환은 `/home` ↔ `/{lang}/home` 을 처리한다.
+- **웹게임 폴더 구조**: 저장소 루트 `games/<게임>/` 에 게임별 Vite 프로젝트를 둔다(pnpm 워크스페이스에 넣지 않음).
+  빌드 결과는 `apps/web/public/games/<게임>/` 으로 나가며 **결과물도 커밋**한다. 공개 주소는 `/games/<게임>`. 규칙은 `games/README.md`.
+  - `games/habitats/` 는 `C:\Projects\web-game\prototype`(기획명 「열쇠의 기록」) 을 2026-11-09 에 복사한 것. 바꾼 점: Vite `base`·`outDir`, 이미지 경로를 `import.meta.env.BASE_URL` 기준으로, 문서 제목 "Habitats / PLOTA.AI". 게임 본문 문구는 손대지 않았다.
+- sitemap 에 `/`, `/home`, `/en/home`, `/games/habitats` 추가, 예전 허브 `/{ko,en}` 항목 제거. llms.txt·RSS 링크 갱신.
+
+### 운영 호스팅 관찰 (2026-11-09)
+
+- 운영 응답 헤더가 `server: Vercel`, `x-vercel-id` 이고 GitHub 커밋 상태도 Vercel 배포(3개 프로젝트)다. 1절의 "Cloudflare 배포" 설명과 다르니 확인이 필요하다. 이번 변경은 Vercel(next build) 기준으로 검증했다.
+- 참고: `@opennextjs/cloudflare` 빌드는 2026-10-21 이후 Next 15 지원 종료 검사로 실패한다(`--dangerouslyUseUnsupportedNextVersion` 필요). Cloudflare 로 옮길 때는 Next 16 업그레이드나 이 플래그를 검토한다.
+
+### 검증 (2026-11-09, 로컬)
+
+- `tsc --noEmit` 통과, `next build` 성공. `next start` 에서 `/`(게임)·`/home`·`/en/home`·`/ja/home`·`/games/habitats`·리다이렉트(`/ko`, `/en`, `/games`)·기존 FBX/중국어/웹툰/Devlog/Lab 경로·sitemap·llms.txt 응답 확인.
+- 헤드리스 Chrome 390px·1280px 에서 홈 화면 가로 넘침 없음, 게임 첫 화면 렌더 확인(게임 이미지 자리는 원래 비어 있음).
+- OpenNext 로컬 미리보기에서도 `/` 와 `/home` 동작 확인(단 이 미리보기에서는 변경 전에도 `[...product]` 경로가 404 — 로컬 캐시 설정 문제로 보이며 이번 변경과 무관).
+- 운영 배포 확인은 push 이후에 한다.

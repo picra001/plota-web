@@ -35,7 +35,7 @@ export function GET() {
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>${escapeXml(site.name)}</title>
-    <link>${absoluteUrl(`/${lang}`)}</link>
+    <link>${absoluteUrl("/home")}</link>
     <description>${escapeXml(siteMeta[lang].description)}</description>
     <language>${htmlLang[lang]}</language>
     <lastBuildDate>${new Date(updated).toUTCString()}</lastBuildDate>
