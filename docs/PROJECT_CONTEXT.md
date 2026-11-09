@@ -1,5 +1,7 @@
 # PLOTA 프로젝트 이해 및 수정 가이드
 
+> 배포 절차·호스팅·Next 버전 정책은 [DEPLOY.md](DEPLOY.md) 를 우선한다(2026-11-09 기준 운영은 Vercel, Cloudflare 이전 준비 완료).
+
 최종 갱신: 2026-09-25 / 서비스 분리 목업 개편.
 
 ### 2026-09-26 공통 디자인 업데이트
@@ -263,3 +265,13 @@ node node_modules/next/dist/bin/next start -p 3000
 - 헤드리스 Chrome 390px·1280px 에서 홈 화면 가로 넘침 없음, 게임 첫 화면 렌더 확인(게임 이미지 자리는 원래 비어 있음).
 - OpenNext 로컬 미리보기에서도 `/` 와 `/home` 동작 확인(단 이 미리보기에서는 변경 전에도 `[...product]` 경로가 404 — 로컬 캐시 설정 문제로 보이며 이번 변경과 무관).
 - 운영 배포 확인은 push 이후에 한다.
+
+
+## 15. Next.js 16 업그레이드·Cloudflare 빌드 준비 (2026-11-09)
+
+- Next 15.5.20 → **16.4.5**, `@opennextjs/cloudflare` 1.20.1 → **1.20.16**, wrangler → ^4.148. Next 15 지원 종료(2026-10-21)로 Cloudflare 빌드가 거부되던 문제를 해결했다.
+- 사용하지 않던 `eslint`·`eslint-config-next` 제거, `lint` 는 `tsc --noEmit`.
+- 실제로 쓰이지 않던 Instrument Serif(Google Fonts) 제거. 빌드가 외부 폰트 다운로드에 의존하지 않는다. `--font-display` 는 Pretendard 로 떨어진다(이 변수를 쓰는 곳은 예전 novel 화면뿐이며 웹툰으로 리다이렉트된다).
+- `open-next.config.ts` 에 정적 에셋 캐시 설정 — Cloudflare 에서 Devlog 글 404 해결.
+- 검증(로컬): `tsc` 통과, `next build` 성공, `next start` 와 OpenNext 미리보기(wrangler dev) 양쪽에서 `/`, `/home`, 언어 홈, 리다이렉트, FBX(만들기·에셋·가이드·결과), 중국어(홈·회화·사전), 웹툰 회차, Devlog 목록·글(ko/en), Lab, sitemap·llms.txt·RSS 응답 확인. 없는 주소는 404.
+- 절차는 [DEPLOY.md](DEPLOY.md).

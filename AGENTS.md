@@ -1,8 +1,8 @@
 # 프로젝트 작업 안내
 
-이 저장소를 수정하기 전에 `docs/PROJECT_CONTEXT.md`를 읽는다. 프로젝트 구조, 수정 지점, 콘텐츠 규칙과 배포 관련 확인 사항을 정리한 문서다.
+이 저장소를 수정하기 전에 `docs/PROJECT_CONTEXT.md`를 읽는다. 프로젝트 구조, 수정 지점, 콘텐츠 규칙과 배포 관련 확인 사항을 정리한 문서다. 배포 절차·호스팅·Next 버전 정책은 `docs/DEPLOY.md`를 따른다.
 
-- 사용자 확인 운영 방식: Git 연동 Cloudflare 배포, 정적 생성 콘텐츠 사이트.
+- 운영 방식: `main` push → Vercel 자동 배포(2026-11-09 응답 헤더·커밋 상태로 확인), 정적 생성 콘텐츠 사이트. Cloudflare Workers 이전 설정은 준비돼 있다(`docs/DEPLOY.md`).
 - `/` 는 메인 웹게임(현재 Habitats), `/home` 은 앱 아이콘 홈 화면이다. 웹게임은 `games/<게임>/` 에서 빌드해 `apps/web/public/games/<게임>/` 결과물까지 커밋한다(`games/README.md`).
 - 예외는 FBX 제작 하나다. `apps/fbx-api`(Cloudflare Worker + D1 + R2)가 별도 서비스로 있고, `/en/fbx/create` 와 `/en/fbx/job` 이 브라우저에서 그 API 를 호출한다. 페이지 자체는 그대로 정적 생성이다.
 - 기존 README 및 과거 문서의 Vercel 운영·Cloudflare 미사용 설명은 현재 운영 기준으로 사용하지 않는다.

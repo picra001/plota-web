@@ -4,7 +4,8 @@ import matter from "gray-matter";
 import { load as loadYaml } from "js-yaml";
 import { defaultLocale, locales, type Locale } from "./i18n";
 
-const CONTENT_DIR = path.join(process.cwd(), "content");
+// turbopackIgnore: 동적 경로 때문에 프로젝트 전체가 서버 번들에 추적되는 것을 막는다. content/ 는 next.config 의 outputFileTracingIncludes 로 넣는다.
+const CONTENT_DIR = path.join(/* turbopackIgnore: true */ process.cwd(), "content");
 
 /** 섹션 = URL 세그먼트, 값 = content/ 아래 디렉터리 */
 const SECTION_DIR = {

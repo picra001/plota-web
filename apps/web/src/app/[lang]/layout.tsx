@@ -2,18 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import { Instrument_Serif } from "next/font/google";
 import { locales, htmlLang, ogLocale, isLocale } from "@/lib/i18n";
 import { site, siteMeta } from "@/lib/site";
 import { languageAlternates } from "@/lib/seo";
-
-const instrumentSerif = Instrument_Serif({
-  subsets: ["latin"],
-  weight: "400",
-  style: "normal",
-  variable: "--font-instrument-serif",
-  display: "swap",
-});
 
 export function generateStaticParams() {
   return locales.map((lang) => ({ lang }));
@@ -70,7 +61,7 @@ export default async function LangLayout({
   return (
     <html
       lang={htmlLang[lang]}
-      className={`${GeistSans.variable} ${GeistMono.variable} ${instrumentSerif.variable}`}
+      className={`${GeistSans.variable} ${GeistMono.variable}`}
       suppressHydrationWarning
     >
       <body className="flex min-h-screen flex-col">
