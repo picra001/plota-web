@@ -41,7 +41,10 @@ const OUT_NAME_RE = /^(final\.fbx|all_anims\.fbx|preview\.glb|preview\.png|thumb
  * 옵션 범위는 집 PC 워커(comfyui-docker ovdr/server/worker.py KIND_DEFAULTS·kind_options)와 같게 유지한다.
  */
 /** anim = 애니메이션 추가제작(2026-10-19): 이미지 대신 이 서비스가 만든 캐릭터 FBX + Mixamo 클립 → 클립별 FBX + 묶음 FBX */
-const KINDS = ['character', 'static', 'mech', 'ground', 'anim'] as const;
+/** animal = 네발 동물(2026-11-15): 그림 → 리깅 + 절차 애니메이션(Mixamo 클립 없음). 클립은 options.anims('Walk,Run' 쉼표 문자열)·options.default */
+const KINDS = ['character', 'static', 'mech', 'ground', 'anim', 'animal'] as const;
+/** 워커 ANIMAL_CLIPS · comfyui-docker ovdr_animal/blender/quad_rig.py CLIPS 와 같은 목록 */
+const ANIMAL_CLIPS = ['Walk', 'Run', 'Idle', 'Eat', 'Hit', 'Jump', 'Fall'];
 type Kind = (typeof KINDS)[number];
 type OptSpec = { min?: number; max?: number; def: number | string; values?: string[]; also?: string[] };
 /**
@@ -55,6 +58,7 @@ const KIND_OPTIONS: Record<Kind, Record<string, OptSpec>> = {
 	mech: { height_cm: { min: 10, max: 2000, def: 200 }, split: { min: 0.05, max: 0.95, def: 0.5 }, front: { def: 'viewer', values: ['viewer', 'left', 'right'] }, tris: TRIS(7000) },
 	ground: { size_cm: { min: 100, max: 2040, def: 2000 }, uv_repeat: { min: 1, max: 16, def: 1 } },
 	anim: {},
+	animal: { height_cm: { min: 10, max: 2000, def: 100 }, tris: TRIS(8000) }, // tris 30,000 초과·unlimited 는 워커가 30,000 으로 내린다. anims·default 는 아래에서 따로
 };
 
 /** 종류별 옵션 정리 — 범위 밖 값은 오류, 빠진 값은 기본값. 키 순서를 고정해 중복 판정 문자열을 안정시킨다.
@@ -91,6 +95,16 @@ function parseKindOptions(kind: Kind, raw: string | null): { options: Record<str
 			return { options: null, error: `${k} 는 ${spec.min}~${spec.max} 사이${spec.also ? ` 또는 ${spec.also.join('/')}` : ''}` };
 		}
 		out[k] = k === 'tris' ? Math.round(n) : Math.round(n * 1000) / 1000;
+	}
+	if (kind === 'animal') {
+		const rawList: unknown[] = Array.isArray(given.anims) ? given.anims : typeof given.anims === 'string' ? given.anims.split(',') : [];
+		const want = rawList.map((x) => String(x).trim().toLowerCase()).filter(Boolean);
+		if (want.some((x) => !ANIMAL_CLIPS.some((c) => c.toLowerCase() === x))) return { options: null, error: `anims 는 ${ANIMAL_CLIPS.join('/')} 중에서` };
+		const list = ANIMAL_CLIPS.filter((c) => want.includes(c.toLowerCase()));
+		const anims = list.length ? list : ['Walk'];
+		const d = ANIMAL_CLIPS.find((c) => c.toLowerCase() === String(given.default ?? '').trim().toLowerCase());
+		out.anims = anims.join(',');
+		out.default = d && anims.includes(d) ? d : anims[0];
 	}
 	if (kind === 'character' && Object.entries(KIND_OPTIONS.character).every(([k, spec]) => out[k] === spec.def)) return { options: null };
 	// 캐릭터 키가 기본값이면 빼서, 키 옵션이 생기기 전 작업({tris})과 중복 판정이 이어지게 한다.

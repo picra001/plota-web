@@ -20,20 +20,26 @@ export type JobStatus = "queued" | "running" | "done" | "failed";
 
 /** 만들 것의 종류. static·mech·ground 는 뼈대·애니메이션이 없는 FBX. 값 범위는 apps/fbx-api KIND_OPTIONS 와 같게.
  *  anim = 애니메이션 추가제작(2026-10-19): 그림 대신 이 사이트에서 받은 캐릭터 FBX + Mixamo 클립. */
-export type Kind = "character" | "static" | "mech" | "ground" | "anim";
-export const KINDS: Kind[] = ["character", "static", "mech", "ground", "anim"];
+export type Kind = "character" | "static" | "mech" | "ground" | "anim" | "animal";
+export const KINDS: Kind[] = ["character", "animal", "static", "mech", "ground", "anim"];
+/** animal = 네발 동물(2026-11-15). Mixamo 클립 대신 서버가 만들어 내는 동작 — apps/fbx-api ANIMAL_CLIPS 와 같은 목록·순서. */
+export const ANIMAL_CLIPS = ["Walk", "Run", "Idle", "Eat", "Hit", "Jump", "Fall"] as const;
+export const ANIMAL_DEFAULT_CLIP = "Walk";
+/** 동물은 삼각형 30,000 까지만(그 이상은 리깅이 GPU 를 죽인다) — 넘는 값은 서버가 30,000 으로 내린다. */
+export const ANIMAL_TRIS_MAX = 30000;
 /** 동작 클립을 고르는 종류 */
 export function hasClips(kind: Kind): boolean {
   return kind === "character" || kind === "anim";
 }
 export type Tris = number | "unlimited";
-export type KindOptions = { height_cm?: number; split?: number; front?: "viewer" | "left" | "right"; size_cm?: number; uv_repeat?: number; tris?: Tris };
+export type KindOptions = { height_cm?: number; split?: number; front?: "viewer" | "left" | "right"; size_cm?: number; uv_repeat?: number; tris?: Tris; anims?: string; default?: string };
 export const KIND_DEFAULTS: Record<Kind, KindOptions> = {
   character: { tris: 8000, height_cm: 170 },
   static: { height_cm: 120, tris: 2000 },
   mech: { height_cm: 200, split: 0.5, front: "viewer", tris: 7000 },
   ground: { size_cm: 2000, uv_repeat: 1 },
   anim: {},
+  animal: { height_cm: 100, tris: 8000 },
 };
 export const OPTION_RANGES = { height_cm: [10, 2000], size_cm: [100, 2040], uv_repeat: [1, 16], tris: [500, 50000] } as const;
 /** 삼각형 수(메시 밀도). 기본값 = 종류별 검증값(KIND_DEFAULTS.tris). OVERDARE 는 FBX 1개당 30,000 이 상한. */
@@ -295,6 +301,7 @@ export function kindLabel(kind: Kind | undefined, lang: UiLang): string {
     case "mech": return ko ? "움직이는 장치" : "Mechanism";
     case "ground": return ko ? "바닥" : "Ground";
     case "anim": return ko ? "애니메이션 추가제작" : "Add animations";
+    case "animal": return ko ? "동물" : "Animal";
     default: return ko ? "캐릭터" : "Character";
   }
 }

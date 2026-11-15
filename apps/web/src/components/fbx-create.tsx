@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { isLocale } from "@/lib/i18n";
 import { useUiLang } from "./localized-link";
 import {
-  DEFAULT_CLIP, KIND_DEFAULTS, KINDS, LIBRARY_CLIPS, MAX_CHAR_FBX_BYTES, MAX_CLIPS, MAX_CLIP_BYTES, MAX_IMAGE_BYTES, OPTION_RANGES,
+  ANIMAL_CLIPS, ANIMAL_DEFAULT_CLIP, ANIMAL_TRIS_MAX, DEFAULT_CLIP, KIND_DEFAULTS, KINDS, LIBRARY_CLIPS, MAX_CHAR_FBX_BYTES, MAX_CLIPS, MAX_CLIP_BYTES, MAX_IMAGE_BYTES, OPTION_RANGES,
   OVERDARE_TRIS_LIMIT, MECH_TOP_SHARE, hasClips, hasTris, largestPartTris,
   FbxApiError, getHealth, rememberInvite, rememberJob, savedInvite, submitJob,
   type Kind, type KindOptions,
@@ -29,10 +29,11 @@ const COPY = {
     maxClips: (n: number) => `클립은 최대 ${n}개까지 고를 수 있습니다.`, failed: "문제가 생겼습니다. 다시 시도해 주세요.",
     s0: "01 / 무엇을 만들까요", kindLegend: "만들 것",
     kinds: {
-      character: { name: "캐릭터", desc: "뼈대와 애니메이션이 들어간 인물·동물. Mixamo 동작을 붙입니다.", tip: "캐릭터 한 명이 정면을 보고 팔을 몸에서 뗀 그림이 좋습니다." },
+      character: { name: "캐릭터", desc: "뼈대와 애니메이션이 들어간 두 발로 선 인물·캐릭터. Mixamo 동작을 붙입니다. 네발 동물은 '동물'을 고르세요.", tip: "캐릭터 한 명이 정면을 보고 팔을 몸에서 뗀 그림이 좋습니다." },
       static: { name: "정적 물체", desc: "나무, 테이블, 상자처럼 놓아두는 물체. 뼈대 없는 FBX 1개.", tip: "물체 하나만, 비스듬한 각도에서 형태가 잘 보이는 그림이 좋습니다." },
       mech: { name: "움직이는 장치", desc: "포탑처럼 윗부분이 회전축으로 따로 움직이는 장치. 받침·윗부분 FBX 2개.", tip: "측면이나 정면에서 받침과 윗부분의 경계가 수평으로 보이는 그림이 좋습니다." },
       ground: { name: "바닥", desc: "바닥 무늬 그림을 평평한 바닥 판 FBX로. 1분 안쪽.", tip: "위에서 내려다본 바닥 무늬 그림. 가운데 정사각형을 씁니다." },
+      animal: { name: "동물", desc: "호랑이·개·사슴처럼 네 발로 선 동물. 뼈대를 넣고 걷기·뛰기·쓰러지기 같은 동작을 만들어 붙입니다.", tip: "한 마리가 네 다리를 모두 펴고 땅을 디딘 옆모습이나 비스듬한 옆모습 그림이 좋습니다. 다리를 접거나 든 그림은 그 다리가 접힌 채로 움직입니다. 새·물고기·뱀처럼 네발이 아닌 동물은 아직 안 됩니다." },
       anim: { name: "애니메이션 추가제작", desc: "여기서 받은 캐릭터 FBX에 빠뜨린 Mixamo 동작을 더 붙여 다시 받습니다. 리깅은 다시 하지 않아 1분 안쪽.", tip: "결과 페이지에서 받은 FBX(메인 또는 클립 FBX 아무거나)를 올리세요. 다른 곳에서 만든 FBX는 안 됩니다." },
     } as Record<Kind, { name: string; desc: string; tip: string }>,
     s1: "02 / 그림", invite: "초대 코드", invitePh: "받은 코드를 입력하세요", drawing: "그림",
@@ -43,6 +44,11 @@ const COPY = {
     s2: "03 / 애니메이션", clips: "넣을 동작", yours: "내 파일", remove: "빼기", addClip: "Mixamo FBX 클립 추가",
     mainClip: "메인 FBX에 넣을 동작", clipNote: (n: number) => `Mixamo 에서 FBX Binary · With Skin · 30fps 로 받아 주세요. 최대 ${n}개.`,
     s2opt: "03 / 크기와 설정",
+    s2animal: "03 / 동작과 크기", animalClips: "넣을 동작", animalMain: "메인 FBX에 넣을 동작",
+    animalClipNames: { Walk: "걷기", Run: "뛰기", Idle: "대기 (숨쉬기·꼬리)", Eat: "고개 숙여 먹기", Hit: "피격", Jump: "점프", Fall: "쓰러지기" } as Record<string, string>,
+    animalNote: "동작은 Mixamo 클립이 아니라 뼈대에 맞춰 자동으로 만든 것입니다. 동작마다 FBX를 따로 받습니다. 몸에 비해 무리한 동작은 크기를 줄이거나 빼고 만듭니다.",
+    animalHeight: "높이 (cm)", animalHeightNote: "스튜디오에 들어갔을 때 발에서 가장 높은 곳(뿔·귀 포함)까지. 기본 100cm.",
+    warnAnimalTris: (v: number) => `동물은 삼각형 ${n(v)} 까지만 만듭니다. 더 큰 값이나 제한 없음을 골라도 ${n(v)} 으로 만듭니다.`,
     height: "높이 (cm)", heightNote: "스튜디오에 들어갔을 때의 전체 높이. 비워 두면 기본값.",
     charHeight: "키 (cm)", charHeightNote: "스튜디오에 들어갔을 때 머리 꼭대기까지의 키. 기본 170cm(사람 크기). 비워 두면 기본값.",
     mechHeight: "전체 높이 (cm)", split: "자르는 높이", splitNote: "오른쪽 그림의 선을 끌어 받침과 윗부분의 경계에 맞추세요. 윗부분은 이 높이를 회전축으로 돕니다.",
@@ -65,6 +71,7 @@ const COPY = {
       mech: (v: number) => `검증된 값(합계 ${n(v)} = 윗부분 4,000 · 받침 3,000)과 다릅니다. 장치는 이 값으로만 시험했습니다. 두 부품의 이음새·회전축 위치는 그대로지만 시간이 더 걸립니다.`,
       ground: () => "",
       anim: () => "",
+      animal: (v: number) => `검증된 값(${n(v)})과 다릅니다. 동물의 뼈대·가중치·동작은 ${n(v)} 기준으로만 시험했습니다. 리깅이 실패하거나 동작이 어색해질 수 있고, 시간이 더 걸립니다.`,
     } as Record<Kind, (v: number) => string>,
     warnLimit: (t: number) => `FBX 1개에 삼각형 약 ${n(t)}개 — OVERDARE 권장 상한 ${n(OVERDARE_TRIS_LIMIT)} 을 넘습니다. 스튜디오에서 Import 가 막힐 수 있습니다.`,
     warnUnlimited: "제한 없음: TRELLIS 가 만든 메시를 줄이지 않고 그대로 씁니다(보통 수십만~수백만 삼각형 — 모래주머니 시험에서 368만 개, FBX 136MB). OVERDARE 에는 그대로 넣을 수 없고, 시간이 몇 배로 늘며, 결과 페이지의 3D 미리보기는 나오지 않을 수 있습니다(파일은 내려받을 수 있음).",
@@ -80,6 +87,7 @@ const COPY = {
       static: { name: "Static object", desc: "Something that stays put: a tree, a table, a crate. One FBX, no skeleton.", tip: "One object, drawn from an angle that shows its shape." },
       mech: { name: "Mechanism", desc: "A turret or anything whose top turns on a pivot. Two FBX files: base and top.", tip: "A side or front view where the line between base and top is level." },
       ground: { name: "Ground", desc: "A floor pattern turned into a flat ground tile FBX. Under a minute.", tip: "A top-down floor pattern. The center square is used." },
+      animal: { name: "Animal", desc: "A four-legged animal such as a tiger, dog, or deer. It gets a skeleton and generated moves like walk, run, and fall.", tip: "One animal, seen from the side or at an angle, with all four legs straight and on the ground. A leg that is bent or lifted in the drawing stays bent while moving. Birds, fish, snakes and other non-four-legged animals are not supported yet." },
       anim: { name: "Add animations", desc: "Add the Mixamo clips you left out to a character FBX you got here, and download it again. No re-rigging, under a minute.", tip: "Upload an FBX from a result page (the main FBX or any clip FBX). FBX files made elsewhere will not work." },
     } as Record<Kind, { name: string; desc: string; tip: string }>,
     s1: "02 / DRAWING", invite: "Invite code", invitePh: "Enter the code you were given", drawing: "Drawing",
@@ -90,6 +98,11 @@ const COPY = {
     s2: "03 / ANIMATION", clips: "Clips to include", yours: "your file", remove: "Remove", addClip: "Add a Mixamo FBX clip",
     mainClip: "Clip to use in the main FBX", clipNote: (n: number) => `Download Mixamo clips as FBX Binary, With Skin, 30 fps. Up to ${n}.`,
     s2opt: "03 / SIZE AND SETTINGS",
+    s2animal: "03 / MOVES AND SIZE", animalClips: "Moves to include", animalMain: "Move for the main FBX",
+    animalClipNames: { Walk: "Walk", Run: "Run", Idle: "Idle (breathing, tail)", Eat: "Graze", Hit: "Hit reaction", Jump: "Jump", Fall: "Fall over" } as Record<string, string>,
+    animalNote: "These moves are generated for the skeleton, not Mixamo clips. You get one FBX per move. A move that strains the body is toned down or left out.",
+    animalHeight: "Height (cm)", animalHeightNote: "From the feet to the highest point (antlers and ears included) in the studio. Default 100 cm.",
+    warnAnimalTris: (v: number) => `Animals are built with at most ${n(v)} triangles. A larger value or no limit is brought down to ${n(v)}.`,
     height: "Height (cm)", heightNote: "Total height in the studio. Leave empty for the default.",
     charHeight: "Character height (cm)", charHeightNote: "Height to the top of the head in the studio. Default 170 cm (human size). Leave empty for the default.",
     mechHeight: "Total height (cm)", split: "Split height", splitNote: "Drag the line on the drawing to the border between base and top. The top turns around this height.",
@@ -112,6 +125,7 @@ const COPY = {
       mech: (v: number) => `This differs from the tested value (${n(v)} in total: top 4,000, base 3,000). Mechanisms were only tested at that value. The seam and pivot stay the same, but it takes longer.`,
       ground: () => "",
       anim: () => "",
+      animal: (v: number) => `This differs from the tested value (${n(v)}). Animal skeletons, weights, and moves were only tested at ${n(v)}. Rigging may fail or moves may look off, and it takes longer.`,
     } as Record<Kind, (v: number) => string>,
     warnLimit: (t: number) => `About ${n(t)} triangles in one FBX, over the OVERDARE recommended limit of ${n(OVERDARE_TRIS_LIMIT)}. The studio may refuse to import it.`,
     warnUnlimited: "No limit: the mesh TRELLIS builds is used as is, usually hundreds of thousands to millions of triangles (3.68 million and a 136 MB FBX for a sandbag test). It cannot go into OVERDARE as is, takes several times longer, and the 3D preview on the result page may not appear (the files can still be downloaded).",
@@ -145,6 +159,12 @@ export function FbxCreateApp() {
   const [clips, setClips] = useState<string[]>([DEFAULT_CLIP]);
   const [defaultClip, setDefaultClip] = useState(DEFAULT_CLIP);
   const [uploads, setUploads] = useState<{ name: string; file: File }[]>([]);
+  const [animalClips, setAnimalClips] = useState<string[]>([ANIMAL_DEFAULT_CLIP]);      // 동물: 서버가 만드는 동작(1개 이상)
+  const [animalMain, setAnimalMain] = useState<string>(ANIMAL_DEFAULT_CLIP);
+  const toggleAnimalClip = (id: string) => setAnimalClips(prev => {
+    const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+    return next.length ? ANIMAL_CLIPS.filter(c => next.includes(c)) : prev;
+  });
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -237,6 +257,11 @@ export function FbxCreateApp() {
     if (o.height_cm !== undefined) o.height_cm = clampNum(Number(o.height_cm) || KIND_DEFAULTS[kind].height_cm!, OPTION_RANGES.height_cm);
     if (o.size_cm !== undefined) o.size_cm = clampNum(Number(o.size_cm) || 2000, OPTION_RANGES.size_cm);
     if (o.uv_repeat !== undefined) o.uv_repeat = clampNum(Math.round(Number(o.uv_repeat) || 1), OPTION_RANGES.uv_repeat);
+    if (kind === "animal") {
+      if (o.tris === "unlimited" || Number(o.tris) > ANIMAL_TRIS_MAX) o.tris = ANIMAL_TRIS_MAX;
+      o.anims = animalClips.join(",");
+      o.default = animalClips.includes(animalMain) ? animalMain : animalClips[0];
+    }
     return o;
   }
 
@@ -283,10 +308,12 @@ export function FbxCreateApp() {
     if (unlimited) {
       trisWarnings.push(t.warnUnlimited);
       if (kind === "character") trisWarnings.push(t.warnUnlimitedChar);
+      if (kind === "animal") trisWarnings.push(t.warnAnimalTris(ANIMAL_TRIS_MAX));
     } else if (trisNum !== null) {
       if (trisNum !== trisDef) trisWarnings.push(t.warnVerified[kind](trisDef));
       const part = largestPartTris(kind, trisNum);
-      if (part !== null && part > OVERDARE_TRIS_LIMIT) trisWarnings.push(t.warnLimit(part));
+      if (kind === "animal" && trisNum > ANIMAL_TRIS_MAX) trisWarnings.push(t.warnAnimalTris(ANIMAL_TRIS_MAX));
+      else if (part !== null && part > OVERDARE_TRIS_LIMIT) trisWarnings.push(t.warnLimit(part));
     }
   }
   const trisBlock = hasTris(kind) && (
@@ -409,7 +436,30 @@ export function FbxCreateApp() {
           </>
         ) : (
           <>
-            <span className="eyebrow">{t.s2opt}</span>
+            <span className="eyebrow">{kind === "animal" ? t.s2animal : t.s2opt}</span>
+            {kind === "animal" && (
+              <>
+                <fieldset className="fbx-fieldset">
+                  <legend>{t.animalClips}</legend>
+                  {ANIMAL_CLIPS.map(id => (
+                    <label key={id} className="fbx-check">
+                      <input type="checkbox" checked={animalClips.includes(id)} onChange={() => toggleAnimalClip(id)} />
+                      <span>{t.animalClipNames[id] ?? id}</span>
+                    </label>
+                  ))}
+                </fieldset>
+                {animalClips.length > 1 && (
+                  <>
+                    <label htmlFor="animal-main">{t.animalMain}</label>
+                    <select id="animal-main" value={animalClips.includes(animalMain) ? animalMain : animalClips[0]} onChange={e => setAnimalMain(e.target.value)}>
+                      {animalClips.map(id => <option key={id} value={id}>{t.animalClipNames[id] ?? id}</option>)}
+                    </select>
+                  </>
+                )}
+                <p className="small-note">{t.animalNote}</p>
+                {numberField("opt-animal-height", t.animalHeight, t.animalHeightNote, "animal", "height_cm", OPTION_RANGES.height_cm)}
+              </>
+            )}
             {kind === "static" && numberField("opt-height", t.height, t.heightNote, "static", "height_cm", OPTION_RANGES.height_cm)}
             {kind === "mech" && (
               <>
