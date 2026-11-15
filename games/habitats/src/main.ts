@@ -176,28 +176,36 @@ function statsRow(life: Life, base?: Life) {
     const arrow = (v: number, unit: string, fmt = (x: number) => String(x)) => (!v ? `<span class="flat">그대로</span>` : `<span class="${v > 0 ? "up" : "down"}">${v > 0 ? "▲" : "▼"}${fmt(Math.abs(v))}${unit}</span>`);
     void nw; void bNw;
     return `<div class="stats preview">
-      ${c("자산", `한 달 ${pb.net >= 0 ? "+" : ""}${fmtMoney(pb.net)}`, arrow(mDiff, "", fmtMoney))}
-      ${c("여유 시간", `하루 ${hm2(freeHOf(life))}`, arrow(tDiff, "분"))}
+      ${c("순자산", `월 ${pb.net >= 0 ? "+" : ""}${fmtMoney(pb.net)}`, arrow(mDiff, "", fmtMoney))}
+      ${c("여유 시간", `${Math.round(freeHOf(life) * 2) / 2}h/day`, arrow(tDiff, "분"))}
       ${c("체력", `${dayEffects(life).health >= 0 ? "+" : ""}${dayEffects(life).health}/년`, arrow(Math.round((dayEffects(life).health - dayEffects(base).health) * 10) / 10, ""))}
       ${c("관계", `${dayEffects(life).rel >= 0 ? "+" : ""}${dayEffects(life).rel}/년`, arrow(Math.round((dayEffects(life).rel - dayEffects(base).rel) * 10) / 10, ""))}
     </div>`;
   }
   const hm = (h: number) => { const hh = Math.floor(h), mm = Math.round((h - hh) * 6) * 10; return mm === 60 ? `${hh + 1}h` : mm ? `${hh}h${mm}` : `${hh}h`; };
-  // 자산
-  let assetV = "", assetD = "";
-  if (life.phase === "adult") {
-    const nw = netWorth(life, wyNow(app.world!, life));
-    const b = monthlyBook(life, app.world!);
-    assetV = fmtMoney(nw);
-    assetD = S.money < 30 ? `<span class="down">빠듯함</span>` : `<span class="${b.net >= 0 ? "up" : "down"}">한 달 ${b.net >= 0 ? "+" : ""}${fmtMoney(b.net)}</span>`;
-  } else { assetV = life.background.replace(" 집", ""); assetD = `<span class="flat">부모님 형편</span>`; }
+  // 순자산 · 빚 (어른만 둘로 나눠 보여 준다)
+  const hday = (h: number) => `${Math.round(h * 2) / 2}h/day`;
   const tPrev = last?.freeH;
   const tDiff = tPrev === undefined ? 0 : Math.round((freeH - tPrev) * 60);
   const timeD = S.time < 30 ? `<span class="down">모자람</span>` : tDiff ? `<span class="${tDiff > 0 ? "up" : "down"}">${tDiff > 0 ? "▲" : "▼"}${Math.abs(tDiff)}분</span>` : "";
   const cell = (k: string, v: string, d: string, low: boolean, small = false) => `<div class="stat ${low ? "low" : ""}"><div class="k">${k}</div><div class="v ${small ? "sm" : ""}">${v}</div><div class="d">${d}</div></div>`;
-  return `<div class="stats">
-    ${cell("자산", assetV, assetD, life.phase === "adult" && S.money < 30, true)}
-    ${cell("여유 시간", `하루 ${hm(freeH)}`, timeD, S.time < 30, true)}
+  let money = "";
+  if (life.phase === "adult") {
+    const wy = wyNow(app.world!, life);
+    const nw = netWorth(life, wy);
+    const b = monthlyBook(life, app.world!);
+    const mortgage = life.props.reduce((a, p) => a + p.loan, 0) + (life.flags.credit ?? 0);
+    const deps = life.props.reduce((a, p) => a + (p.dep ?? 0), 0);
+    const minus = Math.max(0, -life.cash);
+    const debt = mortgage + deps + minus;
+    const pay = Math.round((annualInterest(life, wy) + minus * 0.07) / 12);
+    const nwD = S.money < 30 ? `<span class="down">빠듯함</span>` : `<span class="${b.net >= 0 ? "up" : "down"}">월 ${b.net >= 0 ? "+" : ""}${fmtMoney(b.net)}</span>`;
+    const debtD = debt ? `<span class="down">이자 월 ${fmtMoney(pay)}</span>` : `<span class="flat">없음</span>`;
+    money = cell("순자산", fmtMoney(nw), nwD, S.money < 30, true) + cell("빚", debt ? fmtMoney(debt) : "0", debtD, debt > 0 && pay * 12 > (life.income || 1) * 0.3, true);
+  } else money = cell("자산", life.background.replace(" 집", ""), `<span class="flat">부모님 형편</span>`, false, true);
+  return `<div class="stats ${life.phase === "adult" ? "five" : ""}">
+    ${money}
+    ${cell("여유 시간", hday(freeH), timeD, S.time < 30, true)}
     ${cell("체력", String(S.body), S.body < 30 ? `<span class="down">지침</span>` : dd(S.body, last?.health), S.body < 30)}
     ${cell("관계", String(S.rel), S.rel < 30 ? `<span class="down">외로움</span>` : dd(S.rel, last?.gak), S.rel < 30)}
   </div>`;

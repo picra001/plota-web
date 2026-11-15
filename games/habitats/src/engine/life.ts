@@ -174,7 +174,7 @@ export function needLack(life: Life, need?: { health?: number; learn?: number; f
   if (need.health && life.health < need.health) return `체력 ${need.health} 필요 · 지금 ${Math.round(life.health)}`;
   if (need.learn && life.learn < need.learn) return `지식이 모자랍니다`;
   if (need.biz && (life.flags.bizExp ?? 0) < need.biz) return `가게 일 경험이 모자랍니다`;
-  if (need.freeH) { const h = dayOf(life).myH; if (h < need.freeH) return `하루 여유 ${need.freeH}시간 필요 · 지금 ${Math.round(h * 10) / 10}시간`; }
+  if (need.freeH) { const h = dayOf(life).myH; if (h < need.freeH) return `하루 내 시간 ${need.freeH}시간 필요 · 지금 ${Math.floor(h * 10) / 10}시간`; }
   return "";
 }
 
