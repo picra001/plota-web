@@ -22,6 +22,12 @@ function sizeText(bytes: number): string {
   return bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+/** 동물 시트 입력(2026-11-22) 예시·프롬프트. 예시 = comfyui-docker ovdr_animal/refs/tiger_sheet_01.png (서빙 관통 시험에 쓴 그림).
+ *  프롬프트는 시트 약속(같은 바닥선, 왼쪽부터 정면 → 비스듬한 정면 → 옆, 같은 선 자세, 그림자 없음)을 그대로 적은 것. */
+const ANIMAL_SHEET_EXAMPLE = "/images/fbx/animal-sheet-example.png";
+const ANIMAL_SHEET_EXAMPLE_PREVIEW = "/images/fbx/animal-sheet-example-preview.jpg";
+const ANIMAL_SHEET_PROMPT = "Character turnaround sheet of a single [ANIMAL], low-poly stylized 3D game asset look. Three full-body standing views side by side on the same ground line, from left to right: front view, three-quarter front view, side view facing left. Identical neutral standing pose in every view: all four legs straight and planted on the ground, head facing straight ahead, tail relaxed. Same proportions, colors, and markings in every view. The views do not overlap. Plain flat light-beige background, even lighting, no cast shadows, no ground shadows, no text, no labels, no borders, no extra objects. Wide 3:2 image.";
+
 const COPY = {
   ko: {
     badType: "PNG, JPG, WEBP 이미지만 올릴 수 있습니다.", tooBig: (mb: number) => `이미지는 ${mb}MB 이하여야 합니다.`,
@@ -47,6 +53,10 @@ const COPY = {
     s2animal: "03 / 동작과 크기", animalClips: "넣을 동작", animalMain: "메인 FBX에 넣을 동작",
     animalClipNames: { Walk: "걷기", Run: "뛰기", Idle: "대기 (숨쉬기·꼬리)", Eat: "고개 숙여 먹기", Hit: "피격", Jump: "점프", Fall: "쓰러지기" } as Record<string, string>,
     animalNote: "동작은 Mixamo 클립이 아니라 뼈대에 맞춰 자동으로 만든 것입니다. 동작마다 FBX를 따로 받습니다. 몸에 비해 무리한 동작은 크기를 줄이거나 빼고 만듭니다.",
+    animalInput: "그림 형식", animalInputs: { single: "그림 한 장", sheet: "시트 (여러 각도를 한 장에)" } as Record<string, string>,
+    animalSheetNote: "시트는 단색 배경에, 선 자세 그림을 같은 바닥선 위에 왼쪽부터 정면 → 비스듬한 정면 → 옆 순서로 그린 한 장입니다. 모든 칸이 네 다리를 펴고 디딘 같은 자세여야 합니다. 달리는 그림·얼굴 확대·제목·구분선은 있어도 자동으로 빠집니다. 바닥 그림자는 없는 편이 좋습니다. 3D 모양은 가운데(비스듬한 정면) 칸으로 만듭니다.",
+    animalSheetExample: "예시 시트 받기 (호랑이)", animalSheetExampleAlt: "동물 시트 예시: 왼쪽부터 정면, 비스듬한 정면, 옆모습의 호랑이",
+    animalSheetPrompt: "이미지 생성 프롬프트", animalSheetPromptNote: "[ANIMAL] 자리에 동물 이름을 영어로 넣어 이미지 생성 AI에 붙여 넣으세요. 그림체 부분은 바꿔도 됩니다.", animalSheetCopy: "프롬프트 복사", animalSheetCopied: "복사됨",
     animalHeight: "높이 (cm)", animalHeightNote: "스튜디오에 들어갔을 때 발에서 가장 높은 곳(뿔·귀 포함)까지. 기본 100cm.",
     warnAnimalTris: (v: number) => `동물은 삼각형 ${n(v)} 까지만 만듭니다. 더 큰 값이나 제한 없음을 골라도 ${n(v)} 으로 만듭니다.`,
     height: "높이 (cm)", heightNote: "스튜디오에 들어갔을 때의 전체 높이. 비워 두면 기본값.",
@@ -101,6 +111,10 @@ const COPY = {
     s2animal: "03 / MOVES AND SIZE", animalClips: "Moves to include", animalMain: "Move for the main FBX",
     animalClipNames: { Walk: "Walk", Run: "Run", Idle: "Idle (breathing, tail)", Eat: "Graze", Hit: "Hit reaction", Jump: "Jump", Fall: "Fall over" } as Record<string, string>,
     animalNote: "These moves are generated for the skeleton, not Mixamo clips. You get one FBX per move. A move that strains the body is toned down or left out.",
+    animalInput: "Drawing format", animalInputs: { single: "One drawing", sheet: "Sheet (several angles on one page)" } as Record<string, string>,
+    animalSheetNote: "A sheet is one page on a plain background with standing views on the same ground line, left to right: front, three-quarter front, side. Every view must show the same pose with all four legs straight and on the ground. A running pose, a face close-up, titles, and divider lines are skipped automatically. It is better to leave out ground shadows. The 3D shape is built from the middle (three-quarter) view.",
+    animalSheetExample: "Download the example sheet (tiger)", animalSheetExampleAlt: "Example animal sheet: a tiger in front, three-quarter front, and side views, left to right",
+    animalSheetPrompt: "Image generation prompt", animalSheetPromptNote: "Replace [ANIMAL] with your animal and paste this into an image generator. You can change the art style part.", animalSheetCopy: "Copy prompt", animalSheetCopied: "Copied",
     animalHeight: "Height (cm)", animalHeightNote: "From the feet to the highest point (antlers and ears included) in the studio. Default 100 cm.",
     warnAnimalTris: (v: number) => `Animals are built with at most ${n(v)} triangles. A larger value or no limit is brought down to ${n(v)}.`,
     height: "Height (cm)", heightNote: "Total height in the studio. Leave empty for the default.",
@@ -161,6 +175,16 @@ export function FbxCreateApp() {
   const [uploads, setUploads] = useState<{ name: string; file: File }[]>([]);
   const [animalClips, setAnimalClips] = useState<string[]>([ANIMAL_DEFAULT_CLIP]);      // 동물: 서버가 만드는 동작(1개 이상)
   const [animalMain, setAnimalMain] = useState<string>(ANIMAL_DEFAULT_CLIP);
+  const [sheetCopied, setSheetCopied] = useState(false);
+  async function copySheetPrompt() {
+    try {
+      await navigator.clipboard.writeText(ANIMAL_SHEET_PROMPT);
+      setSheetCopied(true);
+      setTimeout(() => setSheetCopied(false), 2000);
+    } catch {
+      setSheetCopied(false);
+    }
+  }
   const toggleAnimalClip = (id: string) => setAnimalClips(prev => {
     const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
     return next.length ? ANIMAL_CLIPS.filter(c => next.includes(c)) : prev;
@@ -261,6 +285,7 @@ export function FbxCreateApp() {
       if (o.tris === "unlimited" || Number(o.tris) > ANIMAL_TRIS_MAX) o.tris = ANIMAL_TRIS_MAX;
       o.anims = animalClips.join(",");
       o.default = animalClips.includes(animalMain) ? animalMain : animalClips[0];
+      if (o.input !== "sheet") delete o.input;      // 기본(그림 한 장)이면 보내지 않는다
     }
     return o;
   }
@@ -439,6 +464,23 @@ export function FbxCreateApp() {
             <span className="eyebrow">{kind === "animal" ? t.s2animal : t.s2opt}</span>
             {kind === "animal" && (
               <>
+                <label htmlFor="opt-animal-input">{t.animalInput}</label>
+                <select id="opt-animal-input" value={opts.animal.input ?? "single"} onChange={e => setOpt("animal", "input", e.target.value as KindOptions["input"])}>
+                  {(["single", "sheet"] as const).map(v => <option key={v} value={v}>{t.animalInputs[v]}</option>)}
+                </select>
+                {opts.animal.input === "sheet" && (
+                  <>
+                    <p className="small-note">{t.animalSheetNote}</p>
+                    <a href={ANIMAL_SHEET_EXAMPLE} download="animal-sheet-example.png">
+                      <img src={ANIMAL_SHEET_EXAMPLE_PREVIEW} alt={t.animalSheetExampleAlt} style={{ width: "100%", height: "auto", border: "1px solid var(--line)", borderRadius: 3, marginTop: 10 }} />
+                    </a>
+                    <p className="small-note"><a className="text-link" href={ANIMAL_SHEET_EXAMPLE} download="animal-sheet-example.png">{t.animalSheetExample}</a></p>
+                    <label htmlFor="animal-sheet-prompt">{t.animalSheetPrompt}</label>
+                    <textarea id="animal-sheet-prompt" className="fbx-input" readOnly rows={7} value={ANIMAL_SHEET_PROMPT} onFocus={e => e.currentTarget.select()} style={{ width: "100%", fontSize: 12, lineHeight: 1.6, resize: "vertical" }} />
+                    <p className="small-note">{t.animalSheetPromptNote}</p>
+                    <button type="button" className="button outline" onClick={copySheetPrompt}>{sheetCopied ? t.animalSheetCopied : t.animalSheetCopy}</button>
+                  </>
+                )}
                 <fieldset className="fbx-fieldset">
                   <legend>{t.animalClips}</legend>
                   {ANIMAL_CLIPS.map(id => (

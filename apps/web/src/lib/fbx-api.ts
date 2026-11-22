@@ -32,14 +32,14 @@ export function hasClips(kind: Kind): boolean {
   return kind === "character" || kind === "anim";
 }
 export type Tris = number | "unlimited";
-export type KindOptions = { height_cm?: number; split?: number; front?: "viewer" | "left" | "right"; size_cm?: number; uv_repeat?: number; tris?: Tris; anims?: string; default?: string };
+export type KindOptions = { height_cm?: number; split?: number; front?: "viewer" | "left" | "right"; size_cm?: number; uv_repeat?: number; tris?: Tris; anims?: string; default?: string; input?: "single" | "sheet" };
 export const KIND_DEFAULTS: Record<Kind, KindOptions> = {
   character: { tris: 8000, height_cm: 170 },
   static: { height_cm: 120, tris: 2000 },
   mech: { height_cm: 200, split: 0.5, front: "viewer", tris: 7000 },
   ground: { size_cm: 2000, uv_repeat: 1 },
   anim: {},
-  animal: { height_cm: 100, tris: 8000 },
+  animal: { height_cm: 100, tris: 8000, input: "single" }, // input(2026-11-22): sheet = 여러 각도를 한 장에 그린 시트
 };
 export const OPTION_RANGES = { height_cm: [10, 2000], size_cm: [100, 2040], uv_repeat: [1, 16], tris: [500, 50000] } as const;
 /** 삼각형 수(메시 밀도). 기본값 = 종류별 검증값(KIND_DEFAULTS.tris). OVERDARE 는 FBX 1개당 30,000 이 상한. */

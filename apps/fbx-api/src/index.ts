@@ -58,7 +58,8 @@ const KIND_OPTIONS: Record<Kind, Record<string, OptSpec>> = {
 	mech: { height_cm: { min: 10, max: 2000, def: 200 }, split: { min: 0.05, max: 0.95, def: 0.5 }, front: { def: 'viewer', values: ['viewer', 'left', 'right'] }, tris: TRIS(7000) },
 	ground: { size_cm: { min: 100, max: 2040, def: 2000 }, uv_repeat: { min: 1, max: 16, def: 1 } },
 	anim: {},
-	animal: { height_cm: { min: 10, max: 2000, def: 100 }, tris: TRIS(8000) }, // tris 30,000 초과·unlimited 는 워커가 30,000 으로 내린다. anims·default 는 아래에서 따로
+	// input(2026-11-22): single = 그림 한 장(기존), sheet = 여러 각도를 한 장에 그린 시트(워커가 칸을 나눠 쓴다 — comfyui-docker ovdr_animal AnimalSheetSplit)
+	animal: { height_cm: { min: 10, max: 2000, def: 100 }, tris: TRIS(8000), input: { def: 'single', values: ['single', 'sheet'] } }, // tris 30,000 초과·unlimited 는 워커가 30,000 으로 내린다. anims·default 는 아래에서 따로
 };
 
 /** 종류별 옵션 정리 — 범위 밖 값은 오류, 빠진 값은 기본값. 키 순서를 고정해 중복 판정 문자열을 안정시킨다.
@@ -105,6 +106,7 @@ function parseKindOptions(kind: Kind, raw: string | null): { options: Record<str
 		const d = ANIMAL_CLIPS.find((c) => c.toLowerCase() === String(given.default ?? '').trim().toLowerCase());
 		out.anims = anims.join(',');
 		out.default = d && anims.includes(d) ? d : anims[0];
+		if (out.input === 'single') delete out.input; // 기본값이면 빼서, 시트 옵션이 생기기 전 동물 작업과 중복 판정이 이어지게 한다
 	}
 	if (kind === 'character' && Object.entries(KIND_OPTIONS.character).every(([k, spec]) => out[k] === spec.def)) return { options: null };
 	// 캐릭터 키가 기본값이면 빼서, 키 옵션이 생기기 전 작업({tris})과 중복 판정이 이어지게 한다.
