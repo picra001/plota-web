@@ -53,7 +53,9 @@ const COPY = {
     s2animal: "03 / 동작과 크기", animalClips: "넣을 동작", animalMain: "메인 FBX에 넣을 동작",
     animalClipNames: { Walk: "걷기", Run: "뛰기", Idle: "대기 (숨쉬기·꼬리)", Eat: "고개 숙여 먹기", Hit: "피격", Jump: "점프", Fall: "쓰러지기" } as Record<string, string>,
     animalNote: "동작은 Mixamo 클립이 아니라 뼈대에 맞춰 자동으로 만든 것입니다. 동작마다 FBX를 따로 받습니다. 몸에 비해 무리한 동작은 크기를 줄이거나 빼고 만듭니다.",
-    animalGait: "발 접지 방식(IK)으로 동작 만들기", animalGaitNote: "켜면 걷기·달리기·대기·먹기에서 디딘 발이 미끄러지지 않고 몸통이 함께 움직입니다. 끄면 예전 방식(다리를 흔들기만 하는 동작)으로 만듭니다. 맞기·점프·쓰러지기는 어느 쪽이든 같습니다.",
+    animalWalkPct: "걷기 동작 크기", animalRunPct: "달리기 동작 크기",
+    animalPctNote: "보폭, 발을 드는 높이, 몸통 움직임이 함께 커지거나 작아집니다. 100%가 기본입니다. 크게 잡아도 몸이 늘어나거나 발이 땅에 닿지 않으면, 그 동물이 낼 수 있는 가장 큰 크기로 자동으로 줄어듭니다. 다리가 굵고 짧은 동물은 크게 잡아도 달라지지 않을 수 있습니다.",
+    animalGait: "발 접지 방식(IK)으로 동작 만들기",animalGaitNote: "켜면 걷기·달리기·대기·먹기에서 디딘 발이 미끄러지지 않고 몸통이 함께 움직입니다. 끄면 예전 방식(다리를 흔들기만 하는 동작)으로 만듭니다. 맞기·점프·쓰러지기는 어느 쪽이든 같습니다.",
     animalInput: "그림 형식",animalInputs: { single: "그림 한 장", sheet: "시트 (여러 각도를 한 장에)" } as Record<string, string>,
     animalSheetNote: "시트는 단색 배경에, 선 자세 그림을 같은 바닥선 위에 왼쪽부터 정면 → 비스듬한 정면 → 옆 순서로 그린 한 장입니다. 모든 칸이 네 다리를 펴고 디딘 같은 자세여야 합니다. 달리는 그림·얼굴 확대·제목·구분선은 있어도 자동으로 빠집니다. 바닥 그림자는 없는 편이 좋습니다. 3D 모양은 가운데(비스듬한 정면) 칸으로 만듭니다.",
     animalSheetExample: "예시 시트 받기 (호랑이)", animalSheetExampleAlt: "동물 시트 예시: 왼쪽부터 정면, 비스듬한 정면, 옆모습의 호랑이",
@@ -112,7 +114,9 @@ const COPY = {
     s2animal: "03 / MOVES AND SIZE", animalClips: "Moves to include", animalMain: "Move for the main FBX",
     animalClipNames: { Walk: "Walk", Run: "Run", Idle: "Idle (breathing, tail)", Eat: "Graze", Hit: "Hit reaction", Jump: "Jump", Fall: "Fall over" } as Record<string, string>,
     animalNote: "These moves are generated for the skeleton, not Mixamo clips. You get one FBX per move. A move that strains the body is toned down or left out.",
-    animalGait: "Build moves with planted feet (IK)", animalGaitNote: "When on, planted feet do not slide and the body moves with the legs in Walk, Run, Idle, and Eat. When off, moves are built the earlier way, with legs that only swing. Hit, Jump, and Fall are the same either way.",
+    animalWalkPct: "Walk size", animalRunPct: "Run size",
+    animalPctNote: "Stride, foot lift, and body movement grow or shrink together. 100% is the default. If a larger size stretches the body or the feet cannot reach the ground, it is lowered automatically to the largest size that animal can do. For animals with thick, short legs, a larger setting may change nothing.",
+    animalGait: "Build moves with planted feet (IK)",animalGaitNote: "When on, planted feet do not slide and the body moves with the legs in Walk, Run, Idle, and Eat. When off, moves are built the earlier way, with legs that only swing. Hit, Jump, and Fall are the same either way.",
     animalInput: "Drawing format",animalInputs: { single: "One drawing", sheet: "Sheet (several angles on one page)" } as Record<string, string>,
     animalSheetNote: "A sheet is one page on a plain background with standing views on the same ground line, left to right: front, three-quarter front, side. Every view must show the same pose with all four legs straight and on the ground. A running pose, a face close-up, titles, and divider lines are skipped automatically. It is better to leave out ground shadows. The 3D shape is built from the middle (three-quarter) view.",
     animalSheetExample: "Download the example sheet (tiger)", animalSheetExampleAlt: "Example animal sheet: a tiger in front, three-quarter front, and side views, left to right",
@@ -289,6 +293,10 @@ export function FbxCreateApp() {
       o.default = animalClips.includes(animalMain) ? animalMain : animalClips[0];
       if (o.input !== "sheet") delete o.input;      // 기본(그림 한 장)이면 보내지 않는다
       o.gait = o.gait === "legacy" ? "legacy" : "ik"; // 늘 보낸다(기본 = 발 접지)
+      for (const [key, clip] of [["walk_pct", "Walk"], ["run_pct", "Run"]] as const) {
+        const v = clampNum(Math.round(Number(o[key]) || 100), [50, 200]);
+        if (v === 100 || !animalClips.includes(clip)) delete o[key]; else o[key] = v;   // 기본값·안 고른 동작이면 보내지 않는다
+      }
     }
     return o;
   }
@@ -507,6 +515,14 @@ export function FbxCreateApp() {
                   <span>{t.animalGait}</span>
                 </label>
                 <p className="small-note">{t.animalGaitNote}</p>
+                {([["walk_pct", "Walk", t.animalWalkPct], ["run_pct", "Run", t.animalRunPct]] as const).filter(([, clip]) => animalClips.includes(clip)).map(([key, , label]) => (
+                  <div key={key}>
+                    <label htmlFor={`opt-animal-${key}`}>{label}: {opts.animal[key] ?? 100}%</label>
+                    <input id={`opt-animal-${key}`} type="range" min={50} max={200} step={5} value={opts.animal[key] ?? 100}
+                      onChange={e => setOpt("animal", key, Number(e.target.value))} />
+                  </div>
+                ))}
+                {(animalClips.includes("Walk") || animalClips.includes("Run")) && <p className="small-note">{t.animalPctNote}</p>}
                 {numberField("opt-animal-height", t.animalHeight, t.animalHeightNote, "animal", "height_cm", OPTION_RANGES.height_cm)}
               </>
             )}

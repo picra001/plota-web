@@ -60,7 +60,9 @@ const KIND_OPTIONS: Record<Kind, Record<string, OptSpec>> = {
 	anim: {},
 	// input(2026-11-22): single = 그림 한 장(기존), sheet = 여러 각도를 한 장에 그린 시트(워커가 칸을 나눠 쓴다 — comfyui-docker ovdr_animal AnimalSheetSplit)
 	// gait(2026-11-22): ik = 발 접지 걸음(기본), legacy = 예전 걸음. 기본값이어도 빼지 않는다 — 이 옵션이 생기기 전 동물 작업(예전 걸음)과 중복 판정이 이어지면 안 된다
-	animal: { height_cm: { min: 10, max: 2000, def: 100 }, tris: TRIS(8000), input: { def: 'single', values: ['single', 'sheet'] }, gait: { def: 'ik', values: ['ik', 'legacy'] } }, // tris 30,000 초과·unlimited 는 워커가 30,000 으로 내린다. anims·default 는 아래에서 따로
+	animal: { height_cm: { min: 10, max: 2000, def: 100 }, tris: TRIS(8000), input: { def: 'single', values: ['single', 'sheet'] }, gait: { def: 'ik', values: ['ik', 'legacy'] },
+		// walk_pct·run_pct(2026-11-22): 걷기·달리기 동작 크기 %. 메시가 늘어나거나 발이 안 닿으면 워커가 가능한 크기로 줄인다. 100 이면 아래에서 뺀다
+		walk_pct: { min: 50, max: 200, def: 100 }, run_pct: { min: 50, max: 200, def: 100 } }, // tris 30,000 초과·unlimited 는 워커가 30,000 으로 내린다. anims·default 는 아래에서 따로
 };
 
 /** 종류별 옵션 정리 — 범위 밖 값은 오류, 빠진 값은 기본값. 키 순서를 고정해 중복 판정 문자열을 안정시킨다.
@@ -107,6 +109,10 @@ function parseKindOptions(kind: Kind, raw: string | null): { options: Record<str
 		const d = ANIMAL_CLIPS.find((c) => c.toLowerCase() === String(given.default ?? '').trim().toLowerCase());
 		out.anims = anims.join(',');
 		out.default = d && anims.includes(d) ? d : anims[0];
+		for (const k of ['walk_pct', 'run_pct']) {
+			out[k] = Math.round(Number(out[k]));
+			if (out[k] === 100) delete out[k];
+		}
 		if (out.input === 'single') delete out.input; // 기본값이면 빼서, 시트 옵션이 생기기 전 동물 작업과 중복 판정이 이어지게 한다
 	}
 	if (kind === 'character' && Object.entries(KIND_OPTIONS.character).every(([k, spec]) => out[k] === spec.def)) return { options: null };
