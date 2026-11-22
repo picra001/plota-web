@@ -59,7 +59,8 @@ const KIND_OPTIONS: Record<Kind, Record<string, OptSpec>> = {
 	ground: { size_cm: { min: 100, max: 2040, def: 2000 }, uv_repeat: { min: 1, max: 16, def: 1 } },
 	anim: {},
 	// input(2026-11-22): single = 그림 한 장(기존), sheet = 여러 각도를 한 장에 그린 시트(워커가 칸을 나눠 쓴다 — comfyui-docker ovdr_animal AnimalSheetSplit)
-	animal: { height_cm: { min: 10, max: 2000, def: 100 }, tris: TRIS(8000), input: { def: 'single', values: ['single', 'sheet'] } }, // tris 30,000 초과·unlimited 는 워커가 30,000 으로 내린다. anims·default 는 아래에서 따로
+	// gait(2026-11-22): ik = 발 접지 걸음(기본), legacy = 예전 걸음. 기본값이어도 빼지 않는다 — 이 옵션이 생기기 전 동물 작업(예전 걸음)과 중복 판정이 이어지면 안 된다
+	animal: { height_cm: { min: 10, max: 2000, def: 100 }, tris: TRIS(8000), input: { def: 'single', values: ['single', 'sheet'] }, gait: { def: 'ik', values: ['ik', 'legacy'] } }, // tris 30,000 초과·unlimited 는 워커가 30,000 으로 내린다. anims·default 는 아래에서 따로
 };
 
 /** 종류별 옵션 정리 — 범위 밖 값은 오류, 빠진 값은 기본값. 키 순서를 고정해 중복 판정 문자열을 안정시킨다.
