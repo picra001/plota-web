@@ -28,8 +28,27 @@ const ANIMAL_SHEET_EXAMPLE = "/images/fbx/animal-sheet-example.png";
 const ANIMAL_SHEET_EXAMPLE_PREVIEW = "/images/fbx/animal-sheet-example-preview.jpg";
 const ANIMAL_SHEET_PROMPT = "Character turnaround sheet of a single [ANIMAL], low-poly stylized 3D game asset look. Three full-body standing views side by side on the same ground line, from left to right: front view, three-quarter front view, side view facing left. Identical neutral standing pose in every view: all four legs straight and planted on the ground, head facing straight ahead, tail relaxed. Same proportions, colors, and markings in every view. The views do not overlap. Plain flat light-beige background, even lighting, no cast shadows, no ground shadows, no text, no labels, no borders, no extra objects. Wide 3:2 image.";
 
+/** 그림 올리는 자리에 바로 보여 주는 추천 그림·이미지 생성 프롬프트 (2026-11-22). 종류별 예시 그림은 comfyui-docker 에서 끝까지 관통 확인한 입력을 줄인 것
+ *  (character zombie_a · animal dog_01 · static sandbag-barricade · mech turret_01 · ground terrain). 프롬프트는 각 트랙의 입력 조건을 그대로 적은 것. */
+const KIND_HINTS: Partial<Record<Kind, { img: string; prompt: string }>> = {
+  character: { img: "/images/fbx/hint-character.jpg", prompt: "Full-body character design of [CHARACTER], a single character, front view facing the camera, standing straight in a relaxed A-pose: arms held about 30 degrees away from the body, legs slightly apart and not touching. Hands open, five straight fingers side by side with thin gaps, palms facing the thighs. Whole body in frame from head to feet, centered. No props, no weapons, no cape, no long loose hair or cloth covering the arms or legs. Plain flat light-gray background, even lighting, no cast shadows, no ground shadow, no text. Tall 2:3 image." },
+  animal: { img: "/images/fbx/hint-animal.jpg", prompt: "A single [ANIMAL], full body, three-quarter front side view, standing still on level ground. All four legs straight and planted on the ground, each leg clearly visible and not overlapping another leg. Head facing forward, mouth closed, tail relaxed and away from the hind legs. Low-poly stylized 3D game asset look. Whole body in frame, centered. Plain flat light-beige background, even lighting, no cast shadows, no ground shadow, no text, no other objects. Square 1:1 image." },
+  static: { img: "/images/fbx/hint-static.jpg", prompt: "A single [OBJECT], game prop, seen from a three-quarter view slightly above so the front, one side, and the top are visible. The whole object in frame, centered, standing on its base. Solid, chunky shapes, no thin wires and no see-through parts. Plain flat dark-gray background, even lighting, no cast shadows, no ground shadow, no text, no other objects. Square 1:1 image." },
+  mech: { img: "/images/fbx/hint-mech.jpg", prompt: "A single [TURRET OR MACHINE], game asset, straight side view, orthographic with no perspective. It has two clearly separate parts stacked vertically: a fixed base at the bottom and a rotating top part, joined by a level horizontal seam with a round turret ring. The barrel or front of the top part points to the left. Whole object in frame, centered. Plain flat single-color background, even lighting, no cast shadows, no ground shadow, no text. Square 1:1 image." },
+  ground: { img: "/images/fbx/hint-ground.jpg", prompt: "Seamless tileable ground texture of [MATERIAL], straight top-down orthographic view, flat and evenly lit, no perspective, no shadows, no objects, no horizon, no text. Square 1:1 image." },
+};
+
 const COPY = {
   ko: {
+    hintTitle: "이런 그림이 좋습니다", hintExampleAlt: "추천 그림 예시", hintPrompt: "이미지 생성 프롬프트 예시",
+    hintPromptNote: "대괄호 [ ] 자리에 만들 것을 영어로 넣어 이미지 생성 AI에 붙여 넣으세요. 그림체를 설명하는 말은 더해도 됩니다.", hintCopy: "프롬프트 복사", hintCopied: "복사됨",
+    hintPoints: {
+      character: ["캐릭터 한 명, 정면, 머리부터 발끝까지", "팔은 몸에서 비스듬히 떼고(A자 자세), 다리도 조금 벌리기", "손가락 다섯 개를 곧게 펴서 나란히, 손바닥은 몸 쪽으로", "단색 배경, 그림자·소품·망토 없이"],
+      animal: ["한 마리, 비스듬한 옆모습(또는 옆모습), 몸 전체", "네 다리를 모두 펴고 땅을 디딘 자세, 다리가 서로 겹치지 않게", "꼬리는 뒷다리에서 떨어지게", "단색 배경, 바닥 그림자 없이"],
+      static: ["물체 하나, 비스듬히 위에서 본 각도(앞·옆·윗면이 함께 보이게)", "물체 전체가 그림 안에", "가는 철사·그물처럼 얇은 부분은 무늬로만 남습니다", "단색 배경, 그림자 없이"],
+      mech: ["장치 하나, 원근 없는 측면(또는 정면)", "받침과 윗부분의 경계가 수평선으로 보이게", "포신처럼 앞을 가리키는 부분은 왼쪽이나 오른쪽을 향하게", "단색 또는 투명 배경, 그림자 없이"],
+      ground: ["바로 위에서 내려다본 바닥 무늬", "원근·그림자·물체 없이 평평하게", "가운데 정사각형만 씁니다. 이어 붙일 바닥이면 끝이 이어지는 무늬로"],
+    } as Partial<Record<Kind, string[]>>,
     badType: "PNG, JPG, WEBP 이미지만 올릴 수 있습니다.", tooBig: (mb: number) => `이미지는 ${mb}MB 이하여야 합니다.`,
     badClip: "애니메이션 클립은 Mixamo FBX 파일이어야 합니다.", clipBig: (n: string, mb: number) => `${n} 파일이 ${mb}MB 를 넘습니다.`,
     maxClips: (n: number) => `클립은 최대 ${n}개까지 고를 수 있습니다.`, failed: "문제가 생겼습니다. 다시 시도해 주세요.",
@@ -91,7 +110,16 @@ const COPY = {
     warnUnlimitedChar: "캐릭터는 이 크기에서 리깅이 GPU 오류로 멈춘 기록이 있습니다. 그러면 이 작업만이 아니라 서비스 전체가 멈추고, 관리자가 다시 켜야 합니다.",
   },
   en: {
-    badType: "Please choose a PNG, JPG, or WEBP image.", tooBig: (mb: number) => `The image is larger than ${mb} MB.`,
+    hintTitle: "Pictures that work well", hintExampleAlt: "Example of a recommended picture", hintPrompt: "Example image-generation prompt",
+    hintPromptNote: "Replace the part in [ ] with what you want to make and paste it into an image generator. You can add words that describe the art style.", hintCopy: "Copy prompt", hintCopied: "Copied",
+    hintPoints: {
+      character: ["One character, front view, head to feet", "Arms angled away from the body (A-pose), legs slightly apart", "Five straight fingers side by side, palms toward the body", "Plain background, no shadows, props, or cape"],
+      animal: ["One animal, three-quarter side view (or side view), whole body", "All four legs straight and on the ground, not overlapping", "Tail held away from the hind legs", "Plain background, no ground shadow"],
+      static: ["One object, seen from an angle slightly above (front, side, and top visible)", "The whole object inside the picture", "Thin wires and nets survive only as texture", "Plain background, no shadows"],
+      mech: ["One machine, flat side view (or front view) without perspective", "The line between base and top shows as a level line", "A barrel or front part points left or right", "Plain or transparent background, no shadows"],
+      ground: ["A floor pattern seen from straight above", "Flat, with no perspective, shadows, or objects", "Only the center square is used. Use a seamless pattern if tiles will sit side by side"],
+    } as Partial<Record<Kind, string[]>>,
+    badType:"Please choose a PNG, JPG, or WEBP image.", tooBig: (mb: number) => `The image is larger than ${mb} MB.`,
     badClip: "Animation clips must be FBX files from Mixamo.", clipBig: (n: string, mb: number) => `${n} is larger than ${mb} MB.`,
     maxClips: (n: number) => `You can request up to ${n} clips.`, failed: "Something went wrong. Please try again.",
     s0: "01 / WHAT TO MAKE", kindLegend: "Type",
@@ -181,6 +209,16 @@ export function FbxCreateApp() {
   const [uploads, setUploads] = useState<{ name: string; file: File }[]>([]);
   const [animalClips, setAnimalClips] = useState<string[]>([ANIMAL_DEFAULT_CLIP]);      // 동물: 서버가 만드는 동작(1개 이상)
   const [animalMain, setAnimalMain] = useState<string>(ANIMAL_DEFAULT_CLIP);
+  const [hintCopied, setHintCopied] = useState(false);
+  async function copyHintPrompt(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setHintCopied(true);
+      setTimeout(() => setHintCopied(false), 2000);
+    } catch {
+      setHintCopied(false);
+    }
+  }
   const [sheetCopied, setSheetCopied] = useState(false);
   async function copySheetPrompt() {
     try {
@@ -435,6 +473,25 @@ export function FbxCreateApp() {
           </button>
         </div>
         <p className="small-note">{t.kinds[kind].tip}</p>
+        {(() => {
+          const hint = KIND_HINTS[kind]; const points = t.hintPoints[kind];
+          if (!hint || !points || (kind === "animal" && opts.animal.input === "sheet")) return null;   // 시트 입력은 아래 '그림 형식'에 전용 예시·프롬프트가 있다
+          return (
+            <div style={{ border: "1px solid var(--line)", borderRadius: 3, padding: 12, marginTop: 10, marginBottom: 18 }}>
+              <p className="small-note" style={{ marginTop: 0, fontWeight: 700 }}>{t.hintTitle}</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start" }}>
+                <img src={hint.img} alt={`${t.hintExampleAlt}: ${t.kinds[kind].name}`} loading="lazy" style={{ width: 150, maxWidth: "40%", height: "auto", border: "1px solid var(--line)", borderRadius: 3 }} />
+                <ul className="small-note" style={{ flex: "1 1 180px", margin: 0, paddingLeft: 18 }}>
+                  {points.map(p => <li key={p}>{p}</li>)}
+                </ul>
+              </div>
+              <label htmlFor="kind-hint-prompt" style={{ marginTop: 10 }}>{t.hintPrompt}</label>
+              <textarea id="kind-hint-prompt" className="fbx-input" readOnly rows={5} value={hint.prompt} onFocus={e => e.currentTarget.select()} style={{ width: "100%", fontSize: 12, lineHeight: 1.6, resize: "vertical" }} />
+              <p className="small-note">{t.hintPromptNote}</p>
+              <button type="button" className="button outline" onClick={() => copyHintPrompt(hint.prompt)}>{hintCopied ? t.hintCopied : t.hintCopy}</button>
+            </div>
+          );
+        })()}
 
         {hasClips(kind) ? (
           <>
