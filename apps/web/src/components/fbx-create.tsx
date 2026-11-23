@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { isLocale } from "@/lib/i18n";
 import { useUiLang } from "./localized-link";
 import {
-  ANIMAL_CLIPS, ANIMAL_DEFAULT_CLIP, ANIMAL_TRIS_MAX, DEFAULT_CLIP, KIND_DEFAULTS, KINDS, LIBRARY_CLIPS, MAX_CHAR_FBX_BYTES, MAX_CLIPS, MAX_CLIP_BYTES, MAX_IMAGE_BYTES, OPTION_RANGES,
+  ANIMAL_CLIPS, ANIMAL_DEFAULT_CLIP, ANIMAL_TRIS_MAX, ANIMAL_WING_CLIPS, DEFAULT_CLIP, KIND_DEFAULTS, KINDS, LIBRARY_CLIPS, MAX_CHAR_FBX_BYTES, MAX_CLIPS, MAX_CLIP_BYTES, MAX_IMAGE_BYTES, OPTION_RANGES,
   OVERDARE_TRIS_LIMIT, MECH_TOP_SHARE, hasClips, hasTris, largestPartTris,
   FbxApiError, getHealth, rememberInvite, rememberJob, savedInvite, submitJob,
   type Kind, type KindOptions,
@@ -38,8 +38,14 @@ const KIND_HINTS: Partial<Record<Kind, { img: string; prompt: string }>> = {
   ground: { img: "/images/fbx/hint-ground.jpg", prompt: "Seamless tileable ground texture of [MATERIAL], straight top-down orthographic view, flat and evenly lit, no perspective, no shadows, no objects, no horizon, no text. Square 1:1 image." },
 };
 
+/** 새(두 발)·날개 달린 동물용 두 번째 예시 (2026-11-23). 그림 = comfyui-docker ovdr_animal/refs/eagle_01 (걷기·날기까지 확인한 입력). 날개를 펴야 날개 뼈가 생긴다 */
+const BIRD_HINT = { img: "/images/fbx/hint-bird.jpg", prompt: "A single [BIRD], full body, three-quarter front view, standing upright on level ground on both legs. Both wings fully spread out to the sides, held away from the body and symmetrical. Both legs straight and planted on the ground, each leg clearly visible and not overlapping the other. Head facing forward, beak closed, tail held away from the legs. Low-poly stylized 3D game asset look. Whole body and both wing tips in frame, centered. Plain flat light-beige background, even lighting, no cast shadows, no ground shadow, no text, no other objects. Wide 3:2 image." };
+
 const COPY = {
   ko: {
+    birdTitle: "새·날개 달린 동물", birdExampleAlt: "추천 그림 예시: 날개를 편 새",
+    birdPoints: ["두 다리를 펴고 땅을 디딘 자세 (타조·닭처럼 못 나는 새도 됩니다)", "날기·활공을 넣으려면 두 날개를 양옆으로 활짝 펴기", "날개를 접은 그림은 걷기·뛰기 같은 땅 동작만 만들어집니다", "날개 달린 네발 동물도 같습니다. 날개를 몸에서 떼어 펴기"],
+    animalWingNote: "날기·활공은 날개를 편 그림에서만 만들어집니다. 날개를 찾지 못하면 이 두 동작은 빠집니다. 제자리 동작이라 띄우는 높이와 앞으로 가는 움직임은 게임 코드에서 넣어야 합니다.",
     hintTitle: "이런 그림이 좋습니다", hintExampleAlt: "추천 그림 예시", hintPrompt: "이미지 생성 프롬프트 예시",
     hintPromptNote: "대괄호 [ ] 자리에 만들 것을 영어로 넣어 이미지 생성 AI에 붙여 넣으세요. 그림체를 설명하는 말은 더해도 됩니다.", hintCopy: "프롬프트 복사", hintCopied: "복사됨",
     hintPoints: {
@@ -58,7 +64,7 @@ const COPY = {
       static: { name: "정적 물체", desc: "나무, 테이블, 상자처럼 놓아두는 물체. 뼈대 없는 FBX 1개.", tip: "물체 하나만, 비스듬한 각도에서 형태가 잘 보이는 그림이 좋습니다." },
       mech: { name: "움직이는 장치", desc: "포탑처럼 윗부분이 회전축으로 따로 움직이는 장치. 받침·윗부분 FBX 2개.", tip: "측면이나 정면에서 받침과 윗부분의 경계가 수평으로 보이는 그림이 좋습니다." },
       ground: { name: "바닥", desc: "바닥 무늬 그림을 평평한 바닥 판 FBX로. 1분 안쪽.", tip: "위에서 내려다본 바닥 무늬 그림. 가운데 정사각형을 씁니다." },
-      animal: { name: "동물", desc: "호랑이·개·사슴처럼 네 발로 선 동물. 뼈대를 넣고 걷기·뛰기·쓰러지기 같은 동작을 만들어 붙입니다.", tip: "한 마리가 네 다리를 모두 펴고 땅을 디딘 옆모습이나 비스듬한 옆모습 그림이 좋습니다. 다리를 접거나 든 그림은 그 다리가 접힌 채로 움직입니다. 새·물고기·뱀처럼 네발이 아닌 동물은 아직 안 됩니다." },
+      animal: { name: "동물", desc: "호랑이·개·사슴처럼 네 발로 선 동물과 타조·닭·독수리처럼 두 발로 선 새. 뼈대를 넣고 걷기·뛰기·쓰러지기 같은 동작을 만들어 붙입니다. 날개를 편 그림이면 날기·활공도 됩니다.", tip: "한 마리가 다리를 모두 펴고 땅을 디딘 옆모습이나 비스듬한 옆모습 그림이 좋습니다. 다리를 접거나 든 그림은 그 다리가 접힌 채로 움직입니다. 물고기·뱀처럼 다리가 없는 동물은 아직 안 됩니다." },
       anim: { name: "애니메이션 추가제작", desc: "여기서 받은 캐릭터 FBX에 빠뜨린 Mixamo 동작을 더 붙여 다시 받습니다. 리깅은 다시 하지 않아 1분 안쪽.", tip: "결과 페이지에서 받은 FBX(메인 또는 클립 FBX 아무거나)를 올리세요. 다른 곳에서 만든 FBX는 안 됩니다." },
     } as Record<Kind, { name: string; desc: string; tip: string }>,
     s1: "02 / 그림", invite: "초대 코드", invitePh: "받은 코드를 입력하세요", drawing: "그림",
@@ -70,7 +76,7 @@ const COPY = {
     mainClip: "메인 FBX에 넣을 동작", clipNote: (n: number) => `Mixamo 에서 FBX Binary · With Skin · 30fps 로 받아 주세요. 최대 ${n}개.`,
     s2opt: "03 / 크기와 설정",
     s2animal: "03 / 동작과 크기", animalClips: "넣을 동작", animalMain: "메인 FBX에 넣을 동작",
-    animalClipNames: { Walk: "걷기", Run: "뛰기", Idle: "대기 (숨쉬기·꼬리)", Eat: "고개 숙여 먹기", Hit: "피격", Jump: "점프", Fall: "쓰러지기" } as Record<string, string>,
+    animalClipNames: { Walk: "걷기", Run: "뛰기", Idle: "대기 (숨쉬기·꼬리)", Eat: "고개 숙여 먹기", Hit: "피격", Jump: "점프", Fall: "쓰러지기", Fly: "날기 (날개 필요)", Glide: "활공 (날개 필요)" } as Record<string, string>,
     animalNote: "동작은 Mixamo 클립이 아니라 뼈대에 맞춰 자동으로 만든 것입니다. 동작마다 FBX를 따로 받습니다. 몸에 비해 무리한 동작은 크기를 줄이거나 빼고 만듭니다.",
     animalWalkPct: "걷기 동작 크기", animalRunPct: "뛰기 동작 크기",
     animalPctNote: "보폭, 발을 드는 높이, 몸통 움직임이 함께 커지거나 작아집니다. 100%가 기본입니다. 크게 잡아도 몸이 늘어나거나 발이 땅에 닿지 않으면, 그 동물이 낼 수 있는 가장 큰 크기로 자동으로 줄어듭니다. 다리가 굵고 짧은 동물은 크게 잡아도 달라지지 않을 수 있습니다.",
@@ -110,6 +116,9 @@ const COPY = {
     warnUnlimitedChar: "캐릭터는 이 크기에서 리깅이 GPU 오류로 멈춘 기록이 있습니다. 그러면 이 작업만이 아니라 서비스 전체가 멈추고, 관리자가 다시 켜야 합니다.",
   },
   en: {
+    birdTitle: "Birds and winged animals", birdExampleAlt: "Example of a recommended picture: a bird with spread wings",
+    birdPoints: ["Standing on both legs, legs straight and on the ground (flightless birds such as an ostrich or chicken work too)", "For Fly and Glide, spread both wings wide to the sides", "With folded wings you get ground moves only, such as walk and run", "The same goes for a winged four-legged animal: wings spread, away from the body"],
+    animalWingNote: "Fly and Glide are made only from a drawing with spread wings. If no wings are found, these two moves are left out. They play in place, so the height and forward travel come from your game code.",
     hintTitle: "Pictures that work well", hintExampleAlt: "Example of a recommended picture", hintPrompt: "Example image-generation prompt",
     hintPromptNote: "Replace the part in [ ] with what you want to make and paste it into an image generator. You can add words that describe the art style.", hintCopy: "Copy prompt", hintCopied: "Copied",
     hintPoints: {
@@ -128,7 +137,7 @@ const COPY = {
       static: { name: "Static object", desc: "Something that stays put: a tree, a table, a crate. One FBX, no skeleton.", tip: "One object, drawn from an angle that shows its shape." },
       mech: { name: "Mechanism", desc: "A turret or anything whose top turns on a pivot. Two FBX files: base and top.", tip: "A side or front view where the line between base and top is level." },
       ground: { name: "Ground", desc: "A floor pattern turned into a flat ground tile FBX. Under a minute.", tip: "A top-down floor pattern. The center square is used." },
-      animal: { name: "Animal", desc: "A four-legged animal such as a tiger, dog, or deer. It gets a skeleton and generated moves like walk, run, and fall.", tip: "One animal, seen from the side or at an angle, with all four legs straight and on the ground. A leg that is bent or lifted in the drawing stays bent while moving. Birds, fish, snakes and other non-four-legged animals are not supported yet." },
+      animal: { name: "Animal", desc: "A four-legged animal such as a tiger, dog, or deer, or a two-legged bird such as an ostrich, chicken, or eagle. It gets a skeleton and generated moves like walk, run, and fall. With spread wings in the drawing, it can also fly and glide.", tip: "One animal, seen from the side or at an angle, with every leg straight and on the ground. A leg that is bent or lifted in the drawing stays bent while moving. Fish, snakes, and other animals without legs are not supported yet." },
       anim: { name: "Add animations", desc: "Add the Mixamo clips you left out to a character FBX you got here, and download it again. No re-rigging, under a minute.", tip: "Upload an FBX from a result page (the main FBX or any clip FBX). FBX files made elsewhere will not work." },
     } as Record<Kind, { name: string; desc: string; tip: string }>,
     s1: "02 / DRAWING", invite: "Invite code", invitePh: "Enter the code you were given", drawing: "Drawing",
@@ -140,7 +149,7 @@ const COPY = {
     mainClip: "Clip to use in the main FBX", clipNote: (n: number) => `Download Mixamo clips as FBX Binary, With Skin, 30 fps. Up to ${n}.`,
     s2opt: "03 / SIZE AND SETTINGS",
     s2animal: "03 / MOVES AND SIZE", animalClips: "Moves to include", animalMain: "Move for the main FBX",
-    animalClipNames: { Walk: "Walk", Run: "Run", Idle: "Idle (breathing, tail)", Eat: "Graze", Hit: "Hit reaction", Jump: "Jump", Fall: "Fall over" } as Record<string, string>,
+    animalClipNames: { Walk: "Walk", Run: "Run", Idle: "Idle (breathing, tail)", Eat: "Graze", Hit: "Hit reaction", Jump: "Jump", Fall: "Fall over", Fly: "Fly (needs wings)", Glide: "Glide (needs wings)" } as Record<string, string>,
     animalNote: "These moves are generated for the skeleton, not Mixamo clips. You get one FBX per move. A move that strains the body is toned down or left out.",
     animalWalkPct: "Walk size", animalRunPct: "Run size",
     animalPctNote: "Stride, foot lift, and body movement grow or shrink together. 100% is the default. If a larger size stretches the body or the feet cannot reach the ground, it is lowered automatically to the largest size that animal can do. For animals with thick, short legs, a larger setting may change nothing.",
@@ -209,6 +218,16 @@ export function FbxCreateApp() {
   const [uploads, setUploads] = useState<{ name: string; file: File }[]>([]);
   const [animalClips, setAnimalClips] = useState<string[]>([ANIMAL_DEFAULT_CLIP]);      // 동물: 서버가 만드는 동작(1개 이상)
   const [animalMain, setAnimalMain] = useState<string>(ANIMAL_DEFAULT_CLIP);
+  const [birdCopied, setBirdCopied] = useState(false);
+  async function copyBirdPrompt() {
+    try {
+      await navigator.clipboard.writeText(BIRD_HINT.prompt);
+      setBirdCopied(true);
+      setTimeout(() => setBirdCopied(false), 2000);
+    } catch {
+      setBirdCopied(false);
+    }
+  }
   const [hintCopied, setHintCopied] = useState(false);
   async function copyHintPrompt(text: string) {
     try {
@@ -489,6 +508,20 @@ export function FbxCreateApp() {
               <textarea id="kind-hint-prompt" className="fbx-input" readOnly rows={5} value={hint.prompt} onFocus={e => e.currentTarget.select()} style={{ width: "100%", fontSize: 12, lineHeight: 1.6, resize: "vertical" }} />
               <p className="small-note">{t.hintPromptNote}</p>
               <button type="button" className="button outline" onClick={() => copyHintPrompt(hint.prompt)}>{hintCopied ? t.hintCopied : t.hintCopy}</button>
+              {kind === "animal" && (
+                <div style={{ borderTop: "1px solid var(--line)", marginTop: 14, paddingTop: 12 }}>
+                  <p className="small-note" style={{ marginTop: 0, fontWeight: 700 }}>{t.birdTitle}</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start" }}>
+                    <img src={BIRD_HINT.img} alt={t.birdExampleAlt} loading="lazy" style={{ width: 150, maxWidth: "40%", height: "auto", border: "1px solid var(--line)", borderRadius: 3 }} />
+                    <ul className="small-note" style={{ flex: "1 1 180px", margin: 0, paddingLeft: 18 }}>
+                      {t.birdPoints.map(p => <li key={p}>{p}</li>)}
+                    </ul>
+                  </div>
+                  <label htmlFor="bird-hint-prompt" style={{ marginTop: 10 }}>{t.hintPrompt}</label>
+                  <textarea id="bird-hint-prompt" className="fbx-input" readOnly rows={5} value={BIRD_HINT.prompt} onFocus={e => e.currentTarget.select()} style={{ width: "100%", fontSize: 12, lineHeight: 1.6, resize: "vertical" }} />
+                  <button type="button" className="button outline" onClick={() => copyBirdPrompt()}>{birdCopied ? t.hintCopied : t.hintCopy}</button>
+                </div>
+              )}
             </div>
           );
         })()}
@@ -567,6 +600,7 @@ export function FbxCreateApp() {
                   </>
                 )}
                 <p className="small-note">{t.animalNote}</p>
+                {animalClips.some(c => ANIMAL_WING_CLIPS.includes(c)) && <p className="small-note">{t.animalWingNote}</p>}
                 <label className="fbx-check">
                   <input type="checkbox" checked={opts.animal.gait !== "legacy"} onChange={e => setOpt("animal", "gait", e.target.checked ? "ik" : "legacy")} />
                   <span>{t.animalGait}</span>

@@ -44,7 +44,7 @@ const OUT_NAME_RE = /^(final\.fbx|all_anims\.fbx|preview\.glb|preview\.png|thumb
 /** animal = 네발 동물(2026-11-15): 그림 → 리깅 + 절차 애니메이션(Mixamo 클립 없음). 클립은 options.anims('Walk,Run' 쉼표 문자열)·options.default */
 const KINDS = ['character', 'static', 'mech', 'ground', 'anim', 'animal'] as const;
 /** 워커 ANIMAL_CLIPS · comfyui-docker ovdr_animal/blender/quad_rig.py CLIPS 와 같은 목록 */
-const ANIMAL_CLIPS = ['Walk', 'Run', 'Idle', 'Eat', 'Hit', 'Jump', 'Fall'];
+const ANIMAL_CLIPS = ['Walk', 'Run', 'Idle', 'Eat', 'Hit', 'Jump', 'Fall', 'Fly', 'Glide']; // Fly·Glide(2026-11-23) = 날개 뼈가 있을 때만 만들어진다(없으면 워커가 뺀다)
 type Kind = (typeof KINDS)[number];
 type OptSpec = { min?: number; max?: number; def: number | string; values?: string[]; also?: string[] };
 /**

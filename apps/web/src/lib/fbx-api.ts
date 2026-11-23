@@ -23,7 +23,9 @@ export type JobStatus = "queued" | "running" | "done" | "failed";
 export type Kind = "character" | "static" | "mech" | "ground" | "anim" | "animal";
 export const KINDS: Kind[] = ["character", "animal", "static", "mech", "ground", "anim"];
 /** animal = 네발 동물(2026-11-15). Mixamo 클립 대신 서버가 만들어 내는 동작 — apps/fbx-api ANIMAL_CLIPS 와 같은 목록·순서. */
-export const ANIMAL_CLIPS = ["Walk", "Run", "Idle", "Eat", "Hit", "Jump", "Fall"] as const;
+export const ANIMAL_CLIPS = ["Walk", "Run", "Idle", "Eat", "Hit", "Jump", "Fall", "Fly", "Glide"] as const;
+/** 날개 뼈가 있을 때만 만들어지는 동작(2026-11-23). 날개를 접은 그림이면 워커가 뺀다 */
+export const ANIMAL_WING_CLIPS: readonly string[] = ["Fly", "Glide"];
 export const ANIMAL_DEFAULT_CLIP = "Walk";
 /** 동물은 삼각형 30,000 까지만(그 이상은 리깅이 GPU 를 죽인다) — 넘는 값은 서버가 30,000 으로 내린다. */
 export const ANIMAL_TRIS_MAX = 30000;
